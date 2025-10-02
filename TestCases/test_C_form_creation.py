@@ -159,7 +159,7 @@ class Test_004_FormTableSection:
 
         base.verify_element_present(
             (By.XPATH, f"//p[contains(.,'{table_section_name}')]"),
-            f"verify_section-{table_section_name.replace(' ', '_')}")
+            f"verify_table-section-{table_section_name.replace(' ', '_')}")
 
         # Table Fields
         sleep(2)
@@ -182,7 +182,11 @@ class Test_004_FormTableSection:
         print("✅ Table Section created with fields")
 
         fc.click_publish()
-        sleep(2)
+        sleep(3)
         driver.refresh()
-
         fc.click_go_to_workflow()
+        sleep(3)
+        base.verify_page_by_element(
+            (By.XPATH, "(//span[contains(.,'Form')])[2]"),
+            "verify_form-submission_page"
+        )

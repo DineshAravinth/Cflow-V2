@@ -5,6 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from BaseFiles.Basehelpers import BaseHelpers
 
 class FormSubmission:
 
@@ -15,14 +16,11 @@ class FormSubmission:
 
     # ---------- Form Fields ----------
     textbox_label = "//label[contains(.,'TextBox')]"
-    table_textbox_label = "//span[contains(.,'TextBox')]"
     textbox_input = "//input[@id='TextBox']"
-    table_textbox_input = "//input[@id='T_01_TextBox']"
+
 
     email_label = "//label[contains(.,'Email')]"
-    table_email_label = "//span[contains(.,'TextBox')]"
     email_input = "//input[@id='Email']"
-    table_textbox_input = "//input[@id='T_01_Email']"
 
     checkbox_label = "(//label[contains(.,'Checkbox')])[1]"
     checkbox_input = "//input[@id='Checkbox']"
@@ -141,6 +139,7 @@ class FormSubmission:
     def __init__(self, driver, timeout=30):
         self.driver = driver
         self.wait = WebDriverWait(driver, timeout)
+        self.base = BaseHelpers(driver, timeout)
 
     # ---------- Generic Helpers ----------
     def click(self, xpath, description="element", retries=3):
@@ -751,11 +750,15 @@ class FormSubmission:
 
         # 1. Click Change Process Stage
         self.click(self.CHANGE_STAGE_BTN, "Change Process Stage button")
-        time.sleep(3)
+        time.sleep(5)
 
         # 2. Select stage
         self.click(self.STAGE_OPTION.format(stage=stage_name), f"{stage_name} stage option")
         time.sleep(3)
+
+        self.base.verify_page_by_element(
+            (By.XPATH, f"(//span[contains(.,'{stage_name}')])[2]"),
+            f"verify_{stage_name}_stage_inbox_page")
 
         # 3. Wait for ID cells
         rows = self.wait.until(

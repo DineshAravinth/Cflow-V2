@@ -1,4 +1,3 @@
-
 import pytest
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -9,10 +8,28 @@ from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from time import sleep
+from BaseFiles.Basehelpers import BaseHelpers
+from selenium.webdriver.common.by import By
 
 # PageObjects + Utilities
 from PageObjects.A_loginpage import LoginPage
 from Utilities.readProperties import ReadConfig
+
+
+# ---------- Pytest CLI Options ----------
+def pytest_addoption(parser):
+    parser.addoption(
+        "--browser",
+        action="store",
+        default="chrome",
+        help="Browser to run tests on: chrome/firefox/edge"
+    )
+    parser.addoption(
+        "--region",
+        action="store",
+        default="AP",
+        help="Region to run tests on: AP/ME/US/EU"
+    )
 
 
 # ---------- Browser Fixture ----------
@@ -31,10 +48,10 @@ def region(request):
 
 # ---------- Setup Fixture ----------
 @pytest.fixture(scope="session")
-def setup(browser):
-    """Setup WebDriver once per session"""
+def setup(browser, region):
+    """Setup WebDriver once per session and verify login URL"""
     driver = None
-    print(f"Starting browser setup: {browser}")
+    print(f"Starting browser setup: {browser} | Region: {region}")
 
     if browser.lower() == "chrome":
         chrome_options = Options()
@@ -55,7 +72,18 @@ def setup(browser):
 
     driver.maximize_window()
     print("✅ Browser launched successfully")
-    yield driver  # no quit here, browser stays open
+
+    # Initialize BaseHelpers for verification
+    base = BaseHelpers(driver)
+
+    # Navigate to login page
+    login_url = f"https://{region.lower()}.cflowapps.com/cflow/login"
+    driver.get(login_url)
+
+    # ✅ Verify Login URL
+    base.verify_page_url(login_url, f"verify_login_url_{region}")
+
+    yield driver  # browser stays open after tests
 
 
 # ---------- Login Fixture ----------
@@ -74,32 +102,29 @@ def login(setup, region):
         driver.get(url)
         sleep(2)
 
+        # Initialize LoginPage object
         lp = LoginPage(driver)
+
+        # Enter credentials
         lp.setClientid(client_id)
         lp.setUserName(username)
         lp.setPassword(password)
+
+        # Click Login
         lp.clickLogin()
         sleep(3)
+
+        # Verify Dashboard page
+        base = BaseHelpers(driver)
+        base.verify_page_by_element(
+            (By.XPATH, "//p[contains(.,'Dashboard')]"),
+            method_name=f"verify_dashboard_after_login_{region}"
+        )
+
         print("✅ Logged in successfully")
 
     except Exception as e:
         print(f"❌ Login failed: {e}")
         driver = None
 
-    yield driver  # browser remains open
-
-
-# ---------- Pytest CLI Options ----------
-def pytest_addoption(parser):
-    parser.addoption(
-        "--browser",
-        action="store",
-        default="chrome",
-        help="Browser to run tests on: chrome/firefox/edge"
-    )
-    parser.addoption(
-        "--region",
-        action="store",
-        default="AP",
-        help="Region to run tests on: AP/ME/US/EU"
-    )
+    yield driver  # logged-in driver for tests

@@ -1,26 +1,23 @@
-
+from BaseFiles.Basehelpers import BaseHelpers
 from selenium.webdriver.common.by import By
 
-class LoginPage:
+class LoginPage(BaseHelpers):
     textbox_clientid = "client-id"
     textbox_username = "username"
     textbox_password = "password"
     button_login = "//button[contains(.,'Login')]"
 
-    def __init__(self, driver):
-        self.driver = driver
+    def __init__(self, driver, timeout=30):
+        super().__init__(driver, timeout)  # initialize BaseHelpers
 
     def setClientid(self, client_id):
-        self.driver.find_element(By.ID, self.textbox_clientid).clear()
-        self.driver.find_element(By.ID, self.textbox_clientid).send_keys(client_id)
+        self.enter_text(f"//input[@id='{self.textbox_clientid}']", client_id, "Client ID")
 
     def setUserName(self, username):
-        self.driver.find_element(By.ID, self.textbox_username).clear()
-        self.driver.find_element(By.ID, self.textbox_username).send_keys(username)
+        self.enter_text(f"//input[@id='{self.textbox_username}']", username, "Username")
 
     def setPassword(self, password):
-        self.driver.find_element(By.ID, self.textbox_password).clear()
-        self.driver.find_element(By.ID, self.textbox_password).send_keys(password)
+        self.enter_text(f"//input[@id='{self.textbox_password}']", password, "Password")
 
     def clickLogin(self):
-        self.driver.find_element(By.XPATH, self.button_login).click()
+        self.click(self.button_login, "Login Button")

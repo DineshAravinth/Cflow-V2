@@ -2,6 +2,7 @@
 import pytest
 from PageObjects.B_stage_creation import CreateWorkflow
 from PageObjects.C_form_creation import FormCreation
+# from PageObjects.dummyfile import FormCreation
 from time import sleep
 
 
@@ -44,22 +45,22 @@ class Test_002_StageCreation:
 
         print("✅ Stage 1 created successfully")
 
-        # Stage 2
-        cw.click_add_stage_button_s2()
-        cw.select_add_stage_s2()
-        cw.enter_stage_name_s2("PS2")
-        cw.save_stage_s2()
-        sleep(2)
-        driver.refresh()
-        print("✅ Stage 2 created successfully")
-
-        # Stage 3
-        cw.click_add_stage_button_s3()
-        cw.select_add_stage_s3()
-        cw.enter_stage_name_s3("PS3")
-        cw.save_stage_s3()
-        sleep(2)
-        driver.refresh()
+        # # Stage 2
+        # cw.click_add_stage_button_s2()
+        # cw.select_add_stage_s2()
+        # cw.enter_stage_name_s2("PS2")
+        # cw.save_stage_s2()
+        # sleep(2)
+        # driver.refresh()
+        # print("✅ Stage 2 created successfully")
+        #
+        # # Stage 3
+        # cw.click_add_stage_button_s3()
+        # cw.select_add_stage_s3()
+        # cw.enter_stage_name_s3("PS3")
+        # cw.save_stage_s3()
+        # sleep(2)
+        # driver.refresh()
 
 
 

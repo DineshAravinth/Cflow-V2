@@ -1,4 +1,3 @@
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -66,7 +65,6 @@ class FormCreation:
 
     #Go to workflow
     go_to_workflow_button = "//button[contains(.,'Go to Workflow')]"
-
 
 
     def __init__(self, driver, timeout=30):

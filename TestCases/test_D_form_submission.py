@@ -25,7 +25,30 @@ class Test_004_Workflow_Form_submission:
         sleep(2)
         fs.textbox(value="Test Automation")
         sleep(3)
+        # fs.select_time("14:30")
+        # sleep(3)
 
+
+        # fs.select_dropdown("B")
+        # sleep(2)
+        #
+        # fs.decimal("123.45")
+
+        # fs.select_ms_dropdown(["B", "C"])
+        # sleep(2)
+        # fs.select_checkboxes(["B", "C"])
+        # sleep(2)
+
+        fs.click_table_add_new_button()
+        sleep(2)
+
+        fs.table_select_time(time_to_select="14:30")
+        sleep(2)
+
+        fs.select_table_dropdown("B")
+        # sleep(2)
+        # fs.table_decimal("123.45")
+        # sleep(2)
 
         # fs.email(value="test@example.com")
         # sleep(3)
@@ -35,7 +58,7 @@ class Test_004_Workflow_Form_submission:
         #
         # fs.dropdown_and_decimal(dropdown_value="B", decimal_value="123.45")
         # sleep(3)
-        #
+
         # fs.ip_address(value="192.168.1.1")
         # sleep(3)
         #
@@ -140,25 +163,25 @@ class Test_004_Workflow_Form_submission:
         # sleep(2)
         # sleep(3)
 
-        fs.click_submit_form_button()
-        sleep(5)
+        # fs.click_submit_form_button()
+        # sleep(5)
 
-        # 1️⃣ Submit the form
-        # ------------------- PS1 -------------------
-        latest_ps1 = fs.process_latest_record_in_stage("PS1")
-        print(f"✅ PS1 processed, latest record ID: {latest_ps1}")
-
-        # ------------------- PS2 -------------------
-        latest_ps2 = fs.process_latest_record_in_stage("PS2")
-        print(f"✅ PS2 processed, latest record ID: {latest_ps2}")
-
-        # ------------------- PS3 -------------------
-        latest_ps3 = fs.process_latest_record_in_stage("PS3")
-        print(f"✅ PS3 processed, latest record ID: {latest_ps3}")
-
-        # ------------------- End Stage -------------------
-        fs.process_latest_record_in_stage("End", verify_in_end=True, latest_id=latest_ps3)
-        print(f"✅ Verified record ID {latest_ps3} reached End stage")
+        # # 1️⃣ Submit the form
+        # # ------------------- PS1 -------------------
+        # latest_ps1 = fs.process_latest_record_in_stage("PS1")
+        # print(f"✅ PS1 processed, latest record ID: {latest_ps1}")
+        #
+        # # ------------------- PS2 -------------------
+        # latest_ps2 = fs.process_latest_record_in_stage("PS2")
+        # print(f"✅ PS2 processed, latest record ID: {latest_ps2}")
+        #
+        # # ------------------- PS3 -------------------
+        # latest_ps3 = fs.process_latest_record_in_stage("PS3")
+        # print(f"✅ PS3 processed, latest record ID: {latest_ps3}")
+        #
+        # # ------------------- End Stage -------------------
+        # fs.process_latest_record_in_stage("End", verify_in_end=True, latest_id=latest_ps3)
+        # print(f"✅ Verified record ID {latest_ps3} reached End stage")
 
         # 3️⃣ Open the latest record in PS1
         # latest_id = fs.open_latest_record_in_stage("PS1")

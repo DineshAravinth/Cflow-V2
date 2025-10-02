@@ -275,7 +275,7 @@ class FormSubmission:
         except TimeoutException:
             raise AssertionError("❌ Terms and Conditions checkbox not found or not clickable")
 
-    def dropdown_and_decimal(self, dropdown_value, decimal_value):
+    def select_dropdown(self, dropdown_value):
         try:
             dropdown_input = self.wait.until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, ".ng-input input[role='combobox']"))
@@ -289,18 +289,12 @@ class FormSubmission:
             option.click()
             dropdown_input.send_keys(Keys.TAB)
 
-            time.sleep (3)
-
-            decimal_input = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, self.decimal_input))
-            )
-            decimal_input.clear()
-            decimal_input.send_keys(decimal_value)
-
-            print(f"✅ Dropdown '{dropdown_value}' selected and Decimal '{decimal_value}' entered")
+            time.sleep(1)  # optional small wait
+            print(f"✅ Dropdown '{dropdown_value}' selected")
 
         except TimeoutException:
-            raise AssertionError("❌ Failed to select dropdown or enter Decimal value")
+            raise AssertionError("❌ Failed to select dropdown value")
+
 
     def radio_button(self, option, label_text="Radio Button"):
         try:
@@ -336,11 +330,9 @@ class FormSubmission:
         except TimeoutException:
             raise AssertionError("❌ File uploader flow failed (element not found or not clickable)")
 
-    def ms_dropdown_and_checkbox(self, ms_dropdown_values, checkbox_values, label_text="MS Dropdown"):
+    def select_ms_dropdown(self, ms_dropdown_values, label_text="MS Dropdown"):
         try:
             label_xpath = f"//label[contains(.,'{label_text}')]"
-
-            # ✅ Scroll to label first
             self.scroll_to_label(label_xpath, label_text)
 
             label = self.wait.until(EC.visibility_of_element_located((By.XPATH, label_xpath)))
@@ -348,44 +340,47 @@ class FormSubmission:
 
             if actual_label_text != label_text:
                 print(f"ℹ️ Label found but not MS Dropdown: {actual_label_text}")
+                return
             else:
                 print(f"✅ Found label: {label_text}")
 
-                # --- Multi-Select Dropdown ---
-                dropdown_input_xpath = f"{label_xpath}/following::div[contains(@class,'ng-value-container')]//input[@role='combobox']"
-                dropdown_input = self.wait.until(EC.element_to_be_clickable((By.XPATH, dropdown_input_xpath)))
+            dropdown_input_xpath = f"{label_xpath}/following::div[contains(@class,'ng-value-container')]//input[@role='combobox']"
+            dropdown_input = self.wait.until(EC.element_to_be_clickable((By.XPATH, dropdown_input_xpath)))
+            dropdown_input.click()
+
+            for value in ms_dropdown_values:
+                dropdown_input.send_keys(value)
+                option_xpath = f"//div[contains(@class,'ng-dropdown-panel')]//div[contains(@class,'ng-option') and normalize-space()='{value}']"
+                option = self.wait.until(EC.element_to_be_clickable((By.XPATH, option_xpath)))
+                option.click()
+                time.sleep(2)
+                print(f"✅ Selected '{value}' in MS Dropdown")
+                dropdown_input.send_keys(Keys.TAB)
                 dropdown_input.click()
 
-                for value in ms_dropdown_values:
-                    dropdown_input.send_keys(value)
-                    option_xpath = f"//div[contains(@class,'ng-dropdown-panel')]//div[contains(@class,'ng-option') and normalize-space()='{value}']"
-                    option = self.wait.until(EC.element_to_be_clickable((By.XPATH, option_xpath)))
-                    option.click()
-                    time.sleep(2)
-                    print(f"✅ Selected '{value}' in MS Dropdown")
-                    dropdown_input.send_keys(Keys.TAB)
-                    dropdown_input.click()
-
-                dropdown_input.send_keys(Keys.TAB)
-
-                # --- Checkbox List ---
-                for value in checkbox_values:
-                    checkbox_xpath = f"//input[@name='Checkbox_List' and @value='{value}']"
-
-                    # ✅ Scroll to checkbox label before clicking
-                    checkbox_label_xpath = f"{checkbox_xpath}/following-sibling::label"
-                    self.scroll_to_label(checkbox_label_xpath, f"Checkbox '{value}'")
-
-                    checkbox = self.wait.until(EC.element_to_be_clickable((By.XPATH, checkbox_xpath)))
-                    if not checkbox.is_selected():
-                        checkbox.click()
-                        time.sleep(2)
-                        print(f"✅ Checked '{value}' in Checkbox List")
-                    else:
-                        print(f"ℹ️ '{value}' already selected in Checkbox List")
+            dropdown_input.send_keys(Keys.TAB)
 
         except TimeoutException:
-            raise AssertionError(f"❌ MS Dropdown or Checkbox List not found or clickable under '{label_text}'")
+            raise AssertionError(f"❌ MS Dropdown '{label_text}' not found or clickable")
+
+    def select_checkboxes(self, checkbox_values):
+        try:
+            for value in checkbox_values:
+                checkbox_xpath = f"//input[@name='Checkbox_List' and @value='{value}']"
+                checkbox_label_xpath = f"{checkbox_xpath}/following-sibling::label"
+
+                self.scroll_to_label(checkbox_label_xpath, f"Checkbox '{value}'")
+                checkbox = self.wait.until(EC.element_to_be_clickable((By.XPATH, checkbox_xpath)))
+
+                if not checkbox.is_selected():
+                    checkbox.click()
+                    time.sleep(2)
+                    print(f"✅ Checked '{value}' in Checkbox List")
+                else:
+                    print(f"ℹ️ '{value}' already selected in Checkbox List")
+
+        except TimeoutException:
+            raise AssertionError(f"❌ Checkbox List not found or clickable for values: {checkbox_values}")
 
     def signature_upload(self, file_path):
         try:
@@ -487,15 +482,13 @@ class FormSubmission:
         self.enter_text(self.table_email_input, value, "Table Email Input")
 
     # ---------- Table Dropdown and Decimal Method ----------
-    def table_dropdown_and_decimal(self, dropdown_value, decimal_value):
+    def select_table_dropdown(self, dropdown_value):
         """
-        Selects a value from the table dropdown and enters the decimal value in the corresponding table input.
+        Selects a value from the table dropdown.
         """
         try:
-            # Scroll to the table dropdown label
             self.scroll_to_label(self.table_dropdown_label, "Table Dropdown")
 
-            # Dropdown input
             dropdown_input = self.wait.until(
                 EC.element_to_be_clickable((By.XPATH, f"{self.table_dropdown_input}//input[@role='combobox']"))
             )
@@ -503,25 +496,33 @@ class FormSubmission:
             dropdown_input.clear()
             dropdown_input.send_keys(dropdown_value)
 
-            # Select option
             option_xpath = f"//div[contains(@class,'ng-dropdown-panel')]//div[contains(@class,'ng-option') and normalize-space()='{dropdown_value}']"
             option = self.wait.until(EC.element_to_be_clickable((By.XPATH, option_xpath)))
             option.click()
             dropdown_input.send_keys(Keys.TAB)
 
-            time.sleep(3)
+            time.sleep(1)  # optional small wait
+            print(f"✅ Table Dropdown '{dropdown_value}' selected")
 
-            # Decimal input
+        except TimeoutException:
+            raise AssertionError(f"❌ Table Dropdown '{dropdown_value}' not found or clickable")
+
+    # ---------- Table Decimal Input ----------
+    def table_decimal(self, decimal_value):
+        """
+        Enters a decimal value into the table decimal input.
+        """
+        try:
             decimal_input = self.wait.until(
                 EC.element_to_be_clickable((By.XPATH, self.table_decimal_input))
             )
             decimal_input.clear()
             decimal_input.send_keys(decimal_value)
 
-            print(f"✅ Table Dropdown '{dropdown_value}' selected and Table Decimal '{decimal_value}' entered")
+            print(f"✅ Table Decimal '{decimal_value}' entered")
 
         except TimeoutException:
-            raise AssertionError("❌ Failed to select Table Dropdown or enter Table Decimal value")
+            raise AssertionError(f"❌ Table Decimal input not found or clickable")
 
     def table_ip_address(self, value):
         self.scroll_to_label(self.table_ip_address_label, "Table IP Address")
@@ -595,23 +596,22 @@ class FormSubmission:
 
     # ---------- Table Time Picker ----------
     def table_select_time(self, time_to_select):
-        """
-        Selects a time in the table form field using Flatpickr.
-        Works reliably for table row time pickers.
-        :param time_to_select: Time in 'HH:MM' 24-hour format
-        """
         try:
-            # 1️⃣ Scroll to Table Time input
-            self.scroll_to_label(self.table_time_label, "Table Time")
+            label = self.table_time_label
+            input_box = self.table_time_input
+            section = "Table Time"
 
-            # 2️⃣ Click input to open the time picker
-            input_element = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, self.table_time_input))
-            )
-            input_element.click()
-            print("✅ Clicked Table Time input to open time picker")
+            # Scroll to label and click input (force JS click to avoid redirect to main)
+            self.scroll_to_label(label, section)
+            input_element = self.wait.until(EC.element_to_be_clickable((By.XPATH, input_box)))
+            self.driver.execute_script("arguments[0].click(); arguments[0].focus();", input_element)
+            print(f"✅ Clicked {section} input to open time picker")
 
-            # 3️⃣ Parse the time
+            # Wait for calendar to open for THIS input
+            calendar_xpath = "//div[contains(@class,'flatpickr-calendar') and contains(@class,'open')]"
+            self.wait.until(EC.visibility_of_element_located((By.XPATH, calendar_xpath)))
+
+            # Split input time
             hour, minute = map(int, time_to_select.split(":"))
             am_pm = "AM"
             if hour >= 12:
@@ -621,40 +621,31 @@ class FormSubmission:
             elif hour == 0:
                 hour = 12
 
-            # 4️⃣ Restrict to the open Flatpickr table time picker
-            base_xpath = "//div[contains(@class,'flatpickr-time') and contains(@class,'open')]"
+            # Get elements inside the open calendar
+            hour_input = self.wait.until(EC.presence_of_element_located(
+                (By.XPATH, f"{calendar_xpath}//input[contains(@class,'flatpickr-hour')]")))
+            minute_input = self.wait.until(EC.presence_of_element_located(
+                (By.XPATH, f"{calendar_xpath}//input[contains(@class,'flatpickr-minute')]")))
+            am_pm_element = self.wait.until(EC.presence_of_element_located(
+                (By.XPATH, f"{calendar_xpath}//span[contains(@class,'flatpickr-am-pm')]")))
 
-            # 5️⃣ Select the hour
-            hour_input = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, base_xpath + "//input[contains(@class,'flatpickr-hour')]")))
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", hour_input)
-            hour_input.click()
-            hour_input.clear()
+            # Fill values using JS + send_keys
+            self.driver.execute_script("arguments[0].value = '';", hour_input)
             hour_input.send_keys(str(hour))
 
-            # 6️⃣ Select the minute
-            minute_input = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, base_xpath + "//input[contains(@class,'flatpickr-minute')]")))
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", minute_input)
-            minute_input.click()
-            minute_input.clear()
+            self.driver.execute_script("arguments[0].value = '';", minute_input)
             minute_input.send_keys(str(minute).zfill(2))
 
-            # 7️⃣ Toggle AM/PM if needed
-            am_pm_element = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, base_xpath + "//span[contains(@class,'flatpickr-am-pm')]")))
-            current_am_pm = am_pm_element.text.strip()
-            if current_am_pm != am_pm:
+            if am_pm_element.text.strip() != am_pm:
                 am_pm_element.click()
 
-            # 8️⃣ Confirm selection
             minute_input.send_keys(Keys.ENTER)
             input_element.send_keys(Keys.TAB)
 
-            print(f"✅ Table Time selected: {time_to_select} ({am_pm})")
+            print(f"✅ {section} selected: {time_to_select} ({am_pm})")
 
         except Exception as e:
-            print(f"❌ Failed to select Table Time: {time_to_select}. Error: {e}")
+            print(f"❌ Error selecting {section}: {e}")
 
     def table_currency(self, value):
         self.scroll_to_label(self.table_currency_label, "Table Currency")

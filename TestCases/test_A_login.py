@@ -16,7 +16,7 @@ class Test_001_Login:
         password = ReadConfig.getPassword(region)
 
         driver.get(url)
-        sleep(3)
+        sleep(2)
 
         lp = LoginPage(driver)
         lp.setClientid(client_id)

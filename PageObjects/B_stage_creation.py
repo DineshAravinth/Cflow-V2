@@ -1,12 +1,8 @@
-
+from BaseFiles.Basehelpers import BaseHelpers
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException
 from datetime import datetime
 
-
-class CreateWorkflow:
+class CreateWorkflow(BaseHelpers):
     # Locators
     sidenav_workflow_setup = "(//span[contains(.,'Workflow Setup')])[1]"
     button_add_new_workflow = "//a[contains(.,' Add New')]"
@@ -33,46 +29,8 @@ class CreateWorkflow:
 
     button_form_creation = "(//button[@type='button'])[2]"
 
-
     def __init__(self, driver, timeout=15):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, timeout)
-
-    # ---------------- Generic helpers ---------------- #
-    def click(self, xpath, description="element"):
-        """Generic click with wait, scroll, and JS fallback"""
-        try:
-            element = self.wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-
-            try:
-                element.click()
-            except ElementClickInterceptedException:
-                # fallback if blocked by overlay
-                self.driver.execute_script("arguments[0].click();", element)
-
-            print(f"✅ Clicked: {description}")
-        except TimeoutException:
-            print(f"❌ Timeout: {description} not clickable")
-            raise
-        except NoSuchElementException:
-            print(f"❌ Not Found: {description}")
-            raise
-
-    def enter_text(self, xpath, text, description="textbox"):
-        """Generic send_keys with wait"""
-        try:
-            element = self.wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
-            element.clear()
-            element.send_keys(text)
-            print(f"✅ Entered '{text}' into {description}")
-        except TimeoutException:
-            print(f"❌ Timeout: {description} not found")
-            raise
-        except NoSuchElementException:
-            print(f"❌ Not Found: {description}")
-            raise
+        super().__init__(driver, timeout)  # initialize BaseHelpers
 
     # ---------------- Workflow Actions ---------------- #
     def open_workflow_setup(self):
@@ -119,11 +77,11 @@ class CreateWorkflow:
         self.click(self.button_save_stage_s2, "Save Stage S2")
 
     def form_creation(self):
-        self.click(self.button_form_creation)
+        self.click(self.button_form_creation, "Form Creation Button")
 
     # ---------------- Stage 3 ---------------- #
     def click_add_stage_button_s3(self):
-            self.click(self.button_add_stage_s3, "Add Stage (S3) button")
+        self.click(self.button_add_stage_s3, "Add Stage (S3) button")
 
     def select_add_stage_s3(self):
         self.click(self.option_add_stage_s3, "Add Stage option (S3)")
@@ -133,6 +91,3 @@ class CreateWorkflow:
 
     def save_stage_s3(self):
         self.click(self.button_save_stage_s3, "Save Stage S3")
-
-    def form_creation(self):
-        self.click(self.button_form_creation)

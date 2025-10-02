@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 class Test_001_Login:
 
     def test_homepage(self, setup, region):
+
         driver = setup
 
         # Read credentials based on region fixture

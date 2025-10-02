@@ -10,6 +10,8 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from time import sleep
 from BaseFiles.Basehelpers import BaseHelpers
 from selenium.webdriver.common.by import By
+from datetime import datetime
+from py.xml import html
 
 # PageObjects + Utilities
 from PageObjects.A_loginpage import LoginPage
@@ -128,3 +130,69 @@ def login(setup, region):
         driver = None
 
     yield driver  # logged-in driver for tests
+
+
+# conftest.py (root folder)
+import pytest
+from datetime import datetime
+from py.xml import html  # required for pytest-html v3.x
+
+# ---------- Set HTML report title ----------
+@pytest.mark.optionalhook
+def pytest_html_report_title(report):
+    report.title = "🚀 Cflow Automation Test Report"
+
+# ---------- Custom attractive single-line environment info ----------
+@pytest.mark.optionalhook
+def pytest_html_results_summary(prefix, summary, postfix):
+    """Custom attractive single-line environment info styled as a status bar"""
+    timestamp = datetime.now().strftime("%d-%b-%Y %H:%M:%S")
+
+    # CLI info or defaults
+    browser = "chrome"
+    region = "ME"
+
+    # Status bar row style
+    style = (
+        "background: linear-gradient(90deg, #e0f7fa, #b2ebf2);"
+        "padding:10px 14px;"  # slightly larger padding
+        "border-radius:8px;"
+        "font-family:Arial, sans-serif;"
+        "font-size:18px;"  # increased from 18px to 20px
+        "color:#000;"
+        "display:flex;"
+        "align-items:center;"
+    )
+
+    # Separator style
+    separator_style = "margin:0 10px; font-weight:bold; color:#555;"
+
+    metadata_html = html.tr([
+        html.td([
+            html.span("📝 Project Name: ", style="font-weight:bold; color:#1976d2;"),
+            html.span("Cflow Automation 🏆", style="font-weight:800; color:#1976d2;"),
+            html.span(" | ", style=separator_style),
+
+            html.span("📂 Module Name: ", style="font-weight:bold; color:#388e3c;"),
+            html.span("Workflow Creation and Submission", style="font-weight:800; color:#388e3c;"),
+            html.span(" | ", style=separator_style),
+
+            html.span("👤 Tester: ", style="font-weight:bold; color:#f57c00;"),
+            html.span("Dinesh Aravinth ⚡", style="font-weight:800; color:#f57c00;"),
+            html.span(" | ", style=separator_style),
+
+            html.span("🌐 Browser: ", style="font-weight:bold; color:#00796b;"),
+            html.span(browser, style="font-weight:800; color:#00796b;"),
+            html.span(" | ", style=separator_style),
+
+            html.span("🌍 Region: ", style="font-weight:bold; color:#512da8;"),
+            html.span(region, style="font-weight:800; color:#512da8;"),
+            html.span(" | ", style=separator_style),
+
+            html.span("⏰ Execution Time: ", style="font-weight:bold; color:#d32f2f;"),
+            html.span(timestamp, style="font-weight:800; color:#d32f2f;")
+        ], style=style)
+    ])
+
+    prefix.append(metadata_html)
+

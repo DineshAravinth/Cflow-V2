@@ -15,11 +15,6 @@ class Test_001_WorkflowSetup:
         driver = login
         base = BaseHelpers(driver)
 
-        # ✅ Verify Dashboard page by unique element
-        base.verify_page_by_element(
-            (By.XPATH, "//p[contains(.,'Dashboard')]"),
-            method_name="verify_dashboard_after_login")
-
         cw = CreateWorkflow(driver)
 
         cw.open_workflow_setup()

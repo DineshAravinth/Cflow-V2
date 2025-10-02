@@ -39,10 +39,10 @@ class CreateWorkflow(BaseHelpers):
     def click_add_new_workflow(self):
         self.click(self.button_add_new_workflow, "Add New Workflow button")
 
-    def enter_unique_workflow_name(self, base_name="Test Automate"):
+    def enter_unique_workflow_name(self, base_name="Test Automation"):
         """Generate a unique workflow name with timestamp and enter it"""
-        current_time = datetime.now().strftime("%d-%m-%Y,%H:%M")
-        unique_name = f"{base_name} -- {current_time}"
+        current_time = datetime.now().strftime("%d-%m-%Y-(%H:%M)")
+        unique_name = f"{base_name}--{current_time}"
         self.enter_text(self.textbox_workflow_name, unique_name, "Workflow Name")
         print(f"⚡ Workflow Created: {unique_name}")
         return unique_name

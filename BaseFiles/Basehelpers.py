@@ -9,6 +9,7 @@ from selenium.common.exceptions import (
     StaleElementReferenceException
 )
 from selenium.webdriver.common.action_chains import ActionChains
+from datetime import datetime
 
 
 class BaseHelpers:
@@ -68,4 +69,50 @@ class BaseHelpers:
             return label
         except TimeoutException:
             raise AssertionError(f"❌ Label not found: {label_xpath}")
+
+    def save_screenshot(self, method_name):
+        """
+        Save a screenshot with timestamp and log the failure.
+        """
+        d = datetime.now().strftime("%d-%m-%Y-(%H-%M-%S)")  # replace ':' with '-' for file names
+        screenshot_path = f"D:/CFLOW-V2/Screenshots/{method_name}-{d}.png"
+        self.driver.save_screenshot(screenshot_path)
+        print(f"❌ {method_name} failed. Screenshot saved at: {screenshot_path}")
+        return f"Screenshot saved to {screenshot_path}"
+
+    def verify_page_url(self, expected_url_part, method_name):
+        actual_url = self.driver.current_url
+        if expected_url_part not in actual_url:
+            screenshot_path = self.save_screenshot(method_name)
+            print(
+                f"⛔ {method_name}: Expected URL to contain '{expected_url_part}', but got '{actual_url}'. Screenshot: {screenshot_path}")
+            raise AssertionError(f"URL verification failed. Screenshot: {screenshot_path}")
+        else:
+            print(f"💚 🏆 ✨ {method_name}: URL verification passed: {actual_url}")
+
+    def verify_page_by_element(self, element_locator, method_name):
+        try:
+            self.wait.until(EC.visibility_of_element_located(element_locator))
+            print(f"💚 🏆 ✨ {method_name}: Page verification passed. Element found: {element_locator[1]}")
+        except Exception as e:
+            screenshot_path = self.save_screenshot(method_name)
+            print(
+                f"⛔ {method_name}: Page verification failed. Element not found: {element_locator[1]}")
+            raise AssertionError(f"Page verification failed: {str(e)}. Screenshot: {screenshot_path}")
+
+    def verify_element_present(self, element_locator, method_name="verify_element"):
+        """
+        Verify that a specific element (field, button, label, etc.) is present on the page.
+
+        :param element_locator: tuple like (By.XPATH, "//input[@id='username']")
+        :param method_name: friendly name for logging and screenshots
+        """
+        try:
+            self.wait.until(EC.presence_of_element_located(element_locator))
+            print(f"💚 🏆 ✨ {method_name}: Element found: {element_locator[1]}")
+        except Exception as e:
+            screenshot_path = self.save_screenshot(method_name)
+            print(f"⛔ {method_name}: Element not found: {element_locator[1]}")
+            raise AssertionError(f"Element verification failed: {str(e)}. Screenshot: {screenshot_path}")
+
 

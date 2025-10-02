@@ -25,7 +25,7 @@ class FormCreation:
 
     # ---------- Generic Drop Target ----------
     drop_field_here = "(//div[contains(.,' Drop field here.. ')])[8]"
-    Table_section_drop_field_here = "(//div[contains(.,' Drop field here.. ')])[12]"
+    Table_section_drop_field_here = "//div[@class='cdk-drop-list form-row scroll-table ng-star-inserted']//div[contains(text(),'Drop field here..')]"
     button_save_field = "//button[contains(.,'Save')]"
 
     # ---------- Field Locators ----------
@@ -422,7 +422,7 @@ class FormCreation:
         sleep(3)
         try:
             self.wait.until(
-                EC.visibility_of_element_located((By.XPATH, "//div[contains(@class,'modal-content')]"))
+                    EC.visibility_of_element_located((By.XPATH, "//div[contains(@class,'modal-content')]"))
             )
             self.wait.until(EC.visibility_of_element_located((By.XPATH, self.Table_enter_section_name)))
             print("✅ Table Section modal opened successfully.")

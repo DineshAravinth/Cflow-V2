@@ -1,8 +1,8 @@
-
 import pytest
 from PageObjects.B_stage_creation import CreateWorkflow
 from PageObjects.C_form_creation import FormCreation
-# from PageObjects.dummyfile import FormCreation
+from selenium.webdriver.common.by import By
+from BaseFiles.Basehelpers import BaseHelpers
 from time import sleep
 
 
@@ -10,10 +10,28 @@ from time import sleep
 @pytest.mark.order(1)
 class Test_001_WorkflowSetup:
     def test_create_workflow(self, login, region):
+
         driver = login
+        base = BaseHelpers(driver)
+
+        # # ✅ Verify Login URL
+        # expected_login_url = f"https://{region.lower()}.cflowapps.com/cflow/login"
+        # base.verify_page_url(expected_login_url, f"test_loginpage_url_{region}")
+
+        # ✅ Verify Dashboard page by unique element
+        base.verify_page_by_element(
+            (By.XPATH, "//p[contains(.,'Dashboard')]"),
+            method_name="verify_dashboard_after_login")
+
         cw = CreateWorkflow(driver)
 
+
         cw.open_workflow_setup()
+
+        base.verify_page_by_element(
+            (By.XPATH, "(//div[contains(.,'Workflow Setup')])[5]"),
+            "verify_workflow_setup_page")
+
         cw.click_add_new_workflow()
 
         workflow_name = cw.enter_unique_workflow_name("Test Automate")
@@ -21,9 +39,12 @@ class Test_001_WorkflowSetup:
 
         # Store workflow_name for later tests (pytest cache or fixture)
         pytest.workflow_name = workflow_name
-
         print(f"✅ Workflow '{workflow_name}' created in {region} region")
         assert workflow_name, "❌ Workflow name is empty"
+
+        base.verify_page_by_element(
+            (By.XPATH, "//button[contains(.,'Stage Creation')]"),
+            "verify_stage_creation_page")
 
 
 # ---------- Stage Creation (Stage 1 + Stage 2) ----------
@@ -31,6 +52,7 @@ class Test_001_WorkflowSetup:
 class Test_002_StageCreation:
     def test_create_stage1_and_stage2(self, login):
         driver = login
+        base = BaseHelpers(driver)
         cw = CreateWorkflow(driver)
 
         # Stage 1
@@ -45,22 +67,23 @@ class Test_002_StageCreation:
 
         print("✅ Stage 1 created successfully")
 
-        # # Stage 2
-        # cw.click_add_stage_button_s2()
-        # cw.select_add_stage_s2()
-        # cw.enter_stage_name_s2("PS2")
-        # cw.save_stage_s2()
-        # sleep(2)
-        # driver.refresh()
-        # print("✅ Stage 2 created successfully")
-        #
-        # # Stage 3
-        # cw.click_add_stage_button_s3()
-        # cw.select_add_stage_s3()
-        # cw.enter_stage_name_s3("PS3")
-        # cw.save_stage_s3()
-        # sleep(2)
-        # driver.refresh()
+        # Stage 2
+        cw.click_add_stage_button_s2()
+        cw.select_add_stage_s2()
+        cw.enter_stage_name_s2("PS2")
+        cw.save_stage_s2()
+        sleep(2)
+        driver.refresh()
+        print("✅ Stage 2 created successfully")
+
+        # Stage 3
+        cw.click_add_stage_button_s3()
+        cw.select_add_stage_s3()
+        cw.enter_stage_name_s3("PS3")
+        cw.save_stage_s3()
+        sleep(2)
+        driver.refresh()
+        print("✅ Stage 2 created successfully")
 
 
 
@@ -69,17 +92,30 @@ class Test_002_StageCreation:
 class Test_003_FormMainSection:
     def test_form_main_section(self, login):
         driver = login
-        driver.refresh()
-
+        base = BaseHelpers(driver)
         cw = CreateWorkflow(driver)
+
         cw.form_creation()
+
+        base.verify_page_by_element(
+            (By.XPATH, "//button[contains(.,'Form Creation')]"),
+            "verify_form_creation_page"
+        )
+
         fc = FormCreation(driver)
 
         # Main Section
         fc.add_section_dragdrop()
-        fc.section_name("Main Section")
+
+        section_name = "Main Section"
+        fc.section_name(section_name)
         fc.save_section()
+
         sleep(2)
+
+        base.verify_element_present(
+            (By.XPATH, f"//p[contains(.,'{section_name}')]"),
+            f"verify_section-{section_name.replace(' ', '_')}")
 
         # Basic Fields
         fc.add_dropdown()
@@ -111,22 +147,28 @@ class Test_003_FormMainSection:
 class Test_004_FormTableSection:
     def test_form_table_section(self, login):
         driver = login
+        base = BaseHelpers(driver)
         fc = FormCreation(driver)
 
         # Table Section
         fc.add_table_section_dragdrop()
-        fc.table_section_name("Table Section")
+        table_section_name = "Table Section"
+        fc.table_section_name(table_section_name)
         fc.save_table_section()
         sleep(2)
 
-        # Table Fields
+        base.verify_element_present(
+            (By.XPATH, f"//p[contains(.,'{table_section_name}')]"),
+            f"verify_section-{table_section_name.replace(' ', '_')}")
 
+        # Table Fields
+        sleep(2)
+        fc.add_signature_table()
         fc.add_textbox_table()
         fc.add_email_table()
         fc.add_checkbox_table()
         fc.add_decimal_table()
         fc.add_number_table()
-        fc.add_signature_table()
         fc.add_textarea_table()
         fc.add_currency_table()
         fc.add_date_table()

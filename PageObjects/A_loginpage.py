@@ -10,6 +10,7 @@ class LoginPage(BaseHelpers):
     def __init__(self, driver, timeout=30):
         super().__init__(driver, timeout)  # initialize BaseHelpers
 
+
     def setClientid(self, client_id):
         self.enter_text(f"//input[@id='{self.textbox_clientid}']", client_id, "Client ID")
 

@@ -8,8 +8,44 @@ class rules_condition_verification:
 
     select_workflow = "//a[contains(.,' AUTOMATION PAGE - RULES ENGINE CONDITIONS ')]"
 
+    # S1
+    s1_textbox_label = "//label[contains(.,'S1 TextBox ')]"
     s1_textbox_input = "//input[@id='S1_TextBox']"
+
+    # S2
+    s2_textbox_label = "//label[contains(.,'S2 TextBox ')]"
+    s2_textbox_input = "//input[@id='S2_TextBox']"
+
+    # S3
+    s3_textbox_int_label = "//label[contains(.,'S3 TextBox INT ')]"
+    s3_textbox_int_input = "//input[@id='S3_TextBox_INT']"
+
+    # S4
+    s4_textbox_int_label = "//label[contains(.,'S4 TextBox INT ')]"
+    s4_textbox_int_input = "//input[@id='S4_TextBox_INT']"
+
+    # S5
+    s5_textbox_int_label = "//label[contains(.,'S5 TextBox INT ')]"
+    s5_textbox_int_input = "//input[@id='S5_TextBox_INT']"
+
+    # S6
+    s6_textbox_int_label = "//label[contains(.,'S6 TextBox INT ')]"
+    s6_textbox_int_input = "//input[@id='S6_TextBox_INT']"
+
+    # S7
+    s7_textbox_label = "//label[contains(.,'S7 TextBox ')]"
+    s7_textbox_input = "//input[@id='S7_TextBox']"
+
+    # S8
+    s8_textbox_label = "//label[contains(.,'S8 TextBox ')]"
+    s8_textbox_input = "//input[@id='S8_TextBox']"
+
+    # S9
+    s9_textbox_label = "//label[contains(.,'S9 TextBox ')]"
+    s9_textbox_input = "//input[@id='S9_TextBox']"
+
     SUBMIT_BTN = "//button[contains(.,'Submit Form')]"
+    ADD_NEW_RECORD_BTN = "//a[contains(.,'Add New')]"
 
     # Table / Record locators
     CURRENT_STATUS_CELL = "//td[@data-title='Current Status']"
@@ -61,50 +97,178 @@ class rules_condition_verification:
         return latest_id, current_status
 
     # ---------------- S1 Rule Verification ---------------- #
-    def verify_equal_to_rule_s1(self, negative_values=None, positive_value="dinesh"):
+    def verify_text_rule(self, textbox_input_locator, rule_name, negative_values=None, positive_values=None,
+                         positive_value_caps=None, equal_to_value=None):
         """
-        Verify Equal To Rule for S1 stage:
-        - Negative values should stay in Initiator
-        - Positive value should move to S1(EQUAL TO)
+        Generic text rule verification for S1 (EQUAL TO) and S2 (NOT EQUAL TO).
+
+        Args:
+            textbox_input_locator (str): XPath of the input textbox.
+            rule_name (str): Stage name (e.g., S1, S2)
+            negative_values (list): Values that should stay in Initiator
+            positive_values (list): Values that should move to the stage
+            positive_value_caps (str): Optional, for S1: uppercase positive value
+            equal_to_value (str): Optional, for S1: value to check equality
         """
         if negative_values is None:
-            negative_values = ["aravinth", "testuser", "demo", "  "]
+            negative_values = []
+        if positive_values is None:
+            positive_values = []
 
-        print(f"⚠️ Negative values to test: {', '.join(negative_values)}")
+        print(f"⚠️ {rule_name} Negative values to test: {', '.join(negative_values)}")
+        print(f"⚠️ {rule_name} Positive values to test: {', '.join(positive_values)}")
+        if positive_value_caps:
+            print(f"⚠️ {rule_name} CAPS Positive value to test: {positive_value_caps}")
 
-        # 🔹 Negative value checks
+        # ---------------- Negative values ----------------
         for neg_val in negative_values:
-            print(f"➡️  Trying negative value: {neg_val}")
-            self.base.enter_text(self.s1_textbox_input, neg_val, "S1 TextBox")
+            print(f"➡️ Testing value: '{neg_val}' (Negative)")
+            self.base.enter_text(textbox_input_locator, neg_val, f"{rule_name} TextBox")
             self.base.click(self.SUBMIT_BTN, "Submit Form")
             time.sleep(3)
-            self.base.verify_initiator_stage_page()
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            time.sleep(2)
+            latest_id, current_status = self.get_latest_record_status()
+
+            if rule_name == "S1" and equal_to_value and neg_val == equal_to_value:
+                expected_status = f"{rule_name}(EQUAL TO)"
+            elif rule_name == "S2":
+                expected_status = "Initiator"
+            else:
+                expected_status = "Initiator"
+
+            if current_status != "Initiator":
+                raise AssertionError(f"❌ Negative value '{neg_val}' wrongly moved to {current_status}")
+            print(f"💚 ✅ Negative value '{neg_val}' correctly stayed in Initiator stage")
+
+            # Reopen same record for next negative test
+            self.base.click(f"//td[@data-title='ID' and @currecordid='{latest_id}']",
+                            f"Reopen Record ID {latest_id}")
+            time.sleep(2)
+            self.base.verify_form_page()
+            time.sleep(2)
+
+        # ---------------- Positive values ----------------
+        for idx, pos_val in enumerate(positive_values):
+            print(f"➡️ Testing value: '{pos_val}' (Positive)")
+
+            # First positive value uses current record; subsequent values create new record
+            if idx > 0:
+                print("➡️ Creating new record for next positive value...")
+                self.base.click(self.ADD_NEW_RECORD_BTN, "Add New Record")
+                time.sleep(2)
+
+            self.base.enter_text(textbox_input_locator, pos_val, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
             time.sleep(3)
             self.scroll_to_element("//span[contains(.,'Current Status')]")
-            time.sleep(2)  # wait for table update
+            time.sleep(2)
+            latest_id, current_status = self.get_latest_record_status()
+
+            # Determine expected status
+            if rule_name == "S1":
+                expected_status = f"{rule_name}(EQUAL TO)"
+            elif rule_name == "S2":
+                expected_status = f"{rule_name}(NOT EQUAL TO)"
+            else:
+                expected_status = "UNKNOWN"
+
+            if current_status == expected_status:
+                print(f"💚 ✅ Positive value '{pos_val}' correctly moved to {current_status}")
+            else:
+                error_message = f"❌ Positive value '{pos_val}' failed → stayed in {current_status} instead of {expected_status}"
+                print(error_message)
+                raise AssertionError(error_message)
+
+        # ---------------- CAPS Positive for S1 ----------------
+        if rule_name == "S1" and positive_value_caps:
+            print(f"➡️ Testing value (CAPS): '{positive_value_caps}'")
+            self.base.click(self.ADD_NEW_RECORD_BTN, "Add New Record")
+            time.sleep(2)
+            self.base.enter_text(textbox_input_locator, positive_value_caps, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(3)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            time.sleep(2)
+            latest_id, current_status = self.get_latest_record_status()
+            expected_status = f"{rule_name}(EQUAL TO)"
+            if current_status == expected_status:
+                print(f"💚 ✅ CAPS Positive value '{positive_value_caps}' correctly moved to {current_status}")
+            else:
+                error_message = f"❌ CAPS Positive value '{positive_value_caps}' failed → stayed in {current_status} instead of {expected_status}"
+                print(error_message)
+                raise AssertionError(error_message)
+
+    def verify_numeric_rule(self, textbox_input_locator, rule_name, comparison, negative_values=None,
+                            positive_values=None):
+        """
+        Generic numeric rule verification for S3, S4, S5, S6 stages.
+
+        Args:
+            textbox_input_locator (str): XPath of the input textbox.
+            rule_name (str): Stage name (e.g., S3, S4, S5, S6)
+            comparison (str): Comparison type: "<", "<=", ">", ">="
+            negative_values (list): Values that should stay in Initiator
+            positive_values (list): Values that should move to the stage
+        """
+        if negative_values is None:
+            negative_values = []
+
+        if positive_values is None:
+            positive_values = []
+
+        print(f"⚠️ {rule_name} Negative values to test: {', '.join(map(str, negative_values))}")
+        print(f"⚠️ {rule_name} Positive values to test: {', '.join(map(str, positive_values))}")
+
+        # 🔹 Negative values
+        for neg_val in negative_values:
+            print(f"➡️ Testing negative value: {neg_val}")
+            self.base.enter_text(textbox_input_locator, str(neg_val), f"{rule_name} TextBox INT")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(3)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
 
             latest_id, current_status = self.get_latest_record_status()
             if current_status != "Initiator":
-                raise AssertionError(f"❌ Negative value '{neg_val}' wrongly moved to {current_status}")
-            print(f"☹️ ❌  Negative value '{neg_val}' correctly stayed in Initiator stage")
+                raise AssertionError(f"❌ {rule_name} Negative value '{neg_val}' wrongly moved to {current_status}")
+            print(f"✅ {rule_name} Negative value '{neg_val}' correctly stayed in Initiator stage")
 
-            # Reopen latest record for retry
+            # Reopen record
             self.base.click(f"//td[@data-title='ID' and @currecordid='{latest_id}']", f"Reopen Record ID {latest_id}")
             time.sleep(2)
             self.base.verify_form_page()
+            time.sleep(2)
+
+        # 🔹 Positive values
+        for idx, pos_val in enumerate(positive_values):
+            print(f"➡️ Testing positive value: {pos_val}")
+
+            # First positive value uses current record; subsequent values create new record
+            if idx > 0:
+                self.base.click(self.ADD_NEW_RECORD_BTN, "Add New Record")
+                time.sleep(2)
+
+            self.base.enter_text(textbox_input_locator, str(pos_val), f"{rule_name} TextBox INT")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
             time.sleep(3)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
 
-        # 🔹 Positive value check
-        print(f"➡️ ✅  Trying positive value: {positive_value}")
-        self.base.enter_text(self.s1_textbox_input, positive_value, "S1 TextBox")
-        self.base.click(self.SUBMIT_BTN, "Submit Form")
-        self.scroll_to_element("//span[contains(.,'Current Status')]")
-        time.sleep(2)
+            latest_id, current_status = self.get_latest_record_status()
+            expected_status = f"{rule_name}({self._comparison_to_text(comparison)})"
+            if current_status == expected_status:
+                print(f"💚 ✅ Positive value '{pos_val}' correctly moved to {current_status}")
+            else:
+                error_message = f"❌ {rule_name} Positive value '{pos_val}' failed → Record stayed in {current_status} instead of {expected_status}"
+                print(error_message)
+                raise AssertionError(error_message)
 
-        latest_id, current_status = self.get_latest_record_status()
-        if current_status == "S1(EQUAL TO)":
-            print(f"💚 🏆 Equal To Rule Passed → Record moved to {current_status}🏆 ✨")
-        else:
-            error_message = f"❌ Equal To Rule Failed → Record stayed in {current_status} instead of S1(EQUAL TO)"
-            print(error_message)  # print to console
-            raise AssertionError(error_message)
+    # Helper to convert comparison symbols to text for status
+    def _comparison_to_text(self, comparison):
+        mapping = {
+            "<": "LESS THAN",
+            "<=": "LESS THAN OR EQUAL TO",
+            ">": "GREATER THAN",
+            ">=": "GREATER THAN OR EQUAL TO"
+        }
+        return mapping.get(comparison, "UNKNOWN")
+

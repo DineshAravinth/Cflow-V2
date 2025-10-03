@@ -18,6 +18,7 @@ class BaseHelpers:
     stage_creation_xpath = "//button[contains(.,'Stage Creation')]"
     form_creation_xpath = "//button[contains(.,'Form Creation')]"
     form_page_xpath = "(//span[contains(.,'Form')])[2]"
+    workflows_list_xpath = "(//div[contains(.,'Workflows')])[5]"
 
     def __init__(self, driver, timeout=30):
         self.driver = driver
@@ -26,6 +27,10 @@ class BaseHelpers:
     def verify_dashboard_page(self):
         locator = (By.XPATH, self.dashboard_page_xpath)
         self.verify_page_by_element(locator, "verify_dashboard_page")
+
+    def verify_workflow_list_page(self):
+        locator = (By.XPATH, self.workflows_list_xpath)
+        self.verify_page_by_element(locator, "verify_workflow_list_page")
 
     def verify_workflow_setup_page(self):
         locator = (By.XPATH, self.workflow_setup_xpath)

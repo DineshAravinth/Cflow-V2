@@ -4,7 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from BaseFiles.Basehelpers import BaseHelpers
 
 class FormSubmission:
@@ -200,7 +199,7 @@ class FormSubmission:
         self.click(self.workflow_link_test_automation_form, "test automation workflow form")
 
     def click_add_new_record(self):
-        self.click(self.add_new_record_button, "Add New Workflow button")
+        self.click(self.add_new_record_button, "Add New record button")
 
     def click_table_add_new_button(self):
         self.click(self.table_add_new_button, "Add New Workflow button")

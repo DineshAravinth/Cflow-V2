@@ -101,7 +101,7 @@ def login(setup, region):
         username = ReadConfig.getUsername(region)
         password = ReadConfig.getPassword(region)
 
-        print(f"Navigating to URL: {url} for region: {region}")
+        print(f"➡️  Navigating to URL: {url} for region: {region}")
         driver.get(url)
         sleep(2)
 

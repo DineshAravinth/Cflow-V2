@@ -145,10 +145,10 @@ def pytest_html_results_summary(prefix, summary, postfix):
 
     # CLI info or defaults
     projectname = "Cflow Automation 🏆"
-    modulename = "Workflow Creation and Submission"
+    modulename = "AUTOMATION PAGE - RULE CONDITIONS - VERIFICATION"
     tester = "Dinesh Aravinth ⚡"
     browser = "chrome"
-    region = "ME"
+    region = "EU"
 
     # Status bar row style
     style = (

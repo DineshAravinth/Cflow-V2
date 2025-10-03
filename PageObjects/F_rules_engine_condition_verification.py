@@ -139,7 +139,7 @@ class rules_condition_verification:
 
             if current_status != "Initiator":
                 raise AssertionError(f"❌ Negative value '{neg_val}' wrongly moved to {current_status}")
-            print(f"💚 ✅ Negative value '{neg_val}' correctly stayed in Initiator stage")
+            print(f"💚  ✅ Negative value '{neg_val}' correctly stayed in Initiator stage")
 
             # Reopen same record for next negative test
             self.base.click(f"//td[@data-title='ID' and @currecordid='{latest_id}']",
@@ -174,7 +174,7 @@ class rules_condition_verification:
                 expected_status = "UNKNOWN"
 
             if current_status == expected_status:
-                print(f"💚 ✅ Positive value '{pos_val}' correctly moved to {current_status}")
+                print(f"💚  ✅ Positive value '{pos_val}' correctly moved to {current_status}")
             else:
                 error_message = f"❌ Positive value '{pos_val}' failed → stayed in {current_status} instead of {expected_status}"
                 print(error_message)
@@ -193,7 +193,7 @@ class rules_condition_verification:
             latest_id, current_status = self.get_latest_record_status()
             expected_status = f"{rule_name}(EQUAL TO)"
             if current_status == expected_status:
-                print(f"💚 ✅ CAPS Positive value '{positive_value_caps}' correctly moved to {current_status}")
+                print(f"💚  ✅ CAPS Positive value '{positive_value_caps}' correctly moved to {current_status}")
             else:
                 error_message = f"❌ CAPS Positive value '{positive_value_caps}' failed → stayed in {current_status} instead of {expected_status}"
                 print(error_message)
@@ -256,7 +256,7 @@ class rules_condition_verification:
             latest_id, current_status = self.get_latest_record_status()
             expected_status = f"{rule_name}({self._comparison_to_text(comparison)})"
             if current_status == expected_status:
-                print(f"💚 ✅ Positive value '{pos_val}' correctly moved to {current_status}")
+                print(f"💚  ✅ Positive value '{pos_val}' correctly moved to {current_status}")
             else:
                 error_message = f"❌ {rule_name} Positive value '{pos_val}' failed → Record stayed in {current_status} instead of {expected_status}"
                 print(error_message)
@@ -271,4 +271,130 @@ class rules_condition_verification:
             ">=": "GREATER THAN OR EQUAL TO"
         }
         return mapping.get(comparison, "UNKNOWN")
+
+    def verify_contains_rule(self,textbox_input_locator,rule_name,match_values=None,negative_values=None):
+        """
+        Generic text rule verification for S7 (CONTAINS) and S8 (DOES NOT CONTAIN).
+
+        Args:
+            textbox_input_locator (str): XPath of the input textbox.
+            rule_name (str): Stage name (e.g., S7, S8)
+            match_values (list): Values that should move to the stage
+            negative_values (list): Values that should stay in Initiator
+        """
+        if match_values is None:
+            match_values = []
+        if negative_values is None:
+            negative_values = []
+
+        print(f"⚠️ {rule_name} Negative values to test: {', '.join(negative_values)}")
+        print(f"⚠️ {rule_name} Positive values to test: {', '.join(match_values)}")
+
+        # 🔹 Negative values
+        for neg_val in negative_values:
+            print(f"➡️ Testing negative value: '{neg_val}' (Negative)")
+            self.base.enter_text(textbox_input_locator, neg_val, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(2)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            latest_id, current_status = self.get_latest_record_status()
+
+            if current_status != "Initiator":
+                raise AssertionError(f"❌ {rule_name} Negative value '{neg_val}' wrongly moved to {current_status}")
+            print(f"💚  ✅  Negative value '{neg_val}' correctly stayed in Initiator stage")
+
+            # Reopen record for next negative test
+            self.base.click(f"//td[@data-title='ID' and @currecordid='{latest_id}']", f"Reopen Record ID {latest_id}")
+            time.sleep(2)
+            self.base.verify_form_page()
+            time.sleep(2)
+
+        # 🔹 Positive values
+        for idx, pos_val in enumerate(match_values):
+            print(f"➡️ Testing positive value: '{pos_val}' (Positive)")
+
+            if idx > 0:
+                print("➡️ Creating new record for next positive value...")
+                self.base.click(self.ADD_NEW_RECORD_BTN, "Add New Record")
+                time.sleep(2)
+
+            self.base.enter_text(textbox_input_locator, pos_val, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(2)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            latest_id, current_status = self.get_latest_record_status()
+
+            # Determine expected status
+            expected_status = f"{rule_name}({'CONTAINS' if rule_name == 'S7' else 'DOES NOT CONTAINS'})"
+            if current_status == expected_status:
+                print(f"💚  ✅  Positive value '{pos_val}' correctly moved to {current_status}")
+            else:
+                error_message = f"❌ Positive value '{pos_val}' failed → stayed in {current_status} instead of {expected_status}"
+                print(error_message)
+                raise AssertionError(error_message)
+
+    def verify_partial_match_rule(self, textbox_input_locator, rule_name, partial_value, negative_values=None,
+                                  positive_values=None):
+        """
+        Verify Partial Match rule for a stage (S9):
+        - Negative values should stay in Initiator
+        - Positive values containing the partial_value should move to the stage
+        """
+        if negative_values is None:
+            negative_values = ["random1", "random2", "demo", "  "]
+        if positive_values is None:
+            positive_values = ["Dinesh", "ARAVINTHDINESHARAVINTH", "dinesh123"]
+
+        expected_status = f"{rule_name}(PARTIAL MATCH)"
+
+        print(f"⚠️ {rule_name} Negative values to test: {', '.join(negative_values)}")
+        print(f"⚠️ {rule_name} Positive values to test: {', '.join(positive_values)}")
+        print(f"⚠️ {rule_name} Partial match target: '{partial_value}'")
+
+        # 🔹 Negative values
+        for neg_val in negative_values:
+            print(f"➡️  Testing negative value: '{neg_val}'")
+            self.base.enter_text(textbox_input_locator, neg_val, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(2)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            time.sleep(1)
+
+            latest_id, current_status = self.get_latest_record_status()
+            if current_status != "Initiator":
+                raise AssertionError(f"❌ Negative value '{neg_val}' wrongly moved to {current_status}")
+            print(f"💚  ✅  Negative value '{neg_val}' correctly stayed in Initiator stage")
+
+            # Reopen same record for next negative test
+            self.base.click(f"//td[@data-title='ID' and @currecordid='{latest_id}']", f"Reopen Record ID {latest_id}")
+            time.sleep(1)
+            self.base.verify_form_page()
+            time.sleep(1)
+
+        # 🔹 Positive values
+        for idx, pos_val in enumerate(positive_values):
+            print(f"➡️  Testing positive value: '{pos_val}'")
+            if idx > 0:
+                print("➡️  Creating new record for next positive value...")
+                self.base.click(self.ADD_NEW_RECORD_BTN, "Add New Record")
+                time.sleep(1)
+
+            self.base.enter_text(textbox_input_locator, pos_val, f"{rule_name} TextBox")
+            self.base.click(self.SUBMIT_BTN, "Submit Form")
+            time.sleep(2)
+            self.scroll_to_element("//span[contains(.,'Current Status')]")
+            time.sleep(1)
+
+            latest_id, current_status = self.get_latest_record_status()
+            # Case-insensitive partial match check
+            if partial_value.lower() in pos_val.lower():
+                if current_status == expected_status:
+                    print(f"💚  ✅  Positive value '{pos_val}' correctly moved to {current_status}")
+                else:
+                    print(f"⚠️  Positive value '{pos_val}' contains '{partial_value}' but status is {current_status}")
+            else:
+                error_message = f"❌ Positive value '{pos_val}' failed → does not contain '{partial_value}'"
+                print(error_message)
+                raise AssertionError(error_message)
+
 

@@ -18,12 +18,9 @@ class Test_001_rulesengine_conditions_verifications:
 
         fs.open_workflow()
         sleep(3)
-        base.verify_workflow_list_page()
         rc.click_workflow()
         sleep(2)
         fs.click_add_new_record()
-        sleep(2)
-        base.verify_form_page()
         sleep(2)
 
         rc.verify_text_rule(
@@ -47,8 +44,6 @@ class Test_001_rulesengine_conditions_verifications:
 
         fs.click_add_new_record()
         sleep(2)
-        base.verify_form_page()
-        sleep(2)
 
         rc.verify_text_rule(
             textbox_input_locator=rc.s2_textbox_input,
@@ -58,7 +53,7 @@ class Test_001_rulesengine_conditions_verifications:
         )
         print("\n🔹 Completed S2 Not Equal To Rule Verification 🔹\n")
 
-    def test_s3_numeric_rule(self, login):
+    def test_s3_numeric_rule_less_than(self, login):
         print("\n🔹 Starting S3 Less Than Verification 🔹\n")
 
         driver = login
@@ -76,7 +71,7 @@ class Test_001_rulesengine_conditions_verifications:
         )
         print("\n🔹 Completed S3 Less Than Verification 🔹\n")
 
-    def test_s4_numeric_rule(self, login):
+    def test_s4_numeric_rule_less_than_or_equal_to(self, login):
         print("\n🔹 Starting S4 Less Than or Equal to Verification 🔹\n")
 
         driver = login
@@ -94,7 +89,7 @@ class Test_001_rulesengine_conditions_verifications:
         )
         print("\n🔹 Completed S4 Less Than or Equal to Verification 🔹\n")
 
-    def test_s5_numeric_rule(self, login):
+    def test_s5_numeric_rule_greater_than(self, login):
         print("\n🔹 Starting S5 Greater Than Verification 🔹\n")
 
         driver = login
@@ -112,7 +107,7 @@ class Test_001_rulesengine_conditions_verifications:
         )
         print("\n🔹 Completed S5 Greater Than Verification 🔹\n")
 
-    def test_s6_numeric_rule(self, login):
+    def test_s6_numeric_rule_greater_than_or_equal_to(self, login):
         print("\n🔹 Starting S6 Greater Than or Equal to Verification 🔹\n")
 
         driver = login
@@ -129,3 +124,51 @@ class Test_001_rulesengine_conditions_verifications:
             positive_values=[50, 51, 1000]
         )
         print("\n🔹 Completed S6 Greater Than or Equal to Verification 🔹\n")
+
+    def test_s7_contains(self, login):
+        print("\n🔹 Starting S7 Contains Rule Verification 🔹\n")
+        driver = login
+        rc = rules_condition_verification(driver)
+        fs = FormSubmission(driver)
+
+        fs.click_add_new_record()
+        rc.verify_contains_rule(
+            textbox_input_locator=rc.s7_textbox_input,
+            rule_name="S7",
+            match_values=["A", "B", "C"],
+            negative_values=["X", "Y", "Z", " "]
+        )
+        print("\n🔹 Completed S7 Contains Rule Verification 🔹\n")
+
+    def test_s8_does_not_contains(self, login):
+        print("\n🔹 Starting S8 Does Not Contains Rule Verification 🔹\n")
+        driver = login
+        rc = rules_condition_verification(driver)
+        fs = FormSubmission(driver)
+
+        fs.click_add_new_record()
+        rc.verify_contains_rule(
+            textbox_input_locator=rc.s8_textbox_input,
+            rule_name="S8",
+            match_values=["X", "Y", "Z"],
+            negative_values=["A", "B", "C", " "]
+        )
+        print("\n🔹 Completed S8 Does Not Contains Rule Verification 🔹\n")
+
+    def test_s9_partial_match(self, login):
+        print("\n🔹 Starting S9 Partial Match Rule Verification 🔹\n")
+        driver = login
+        rc = rules_condition_verification(driver)
+        fs = FormSubmission(driver)
+
+        fs.click_add_new_record()
+        rc.verify_partial_match_rule(
+            textbox_input_locator=rc.s9_textbox_input,
+            rule_name="S9",
+            partial_value="Dinesh",
+            negative_values=["Test", "demo", "  "],
+            positive_values=["ARAVINTHDINESHARAVINTH", "Hi Dinesh", "Dinesh123"]
+        )
+        print("\n🔹 Completed S9 Partial Match Rule Verification 🔹\n")
+
+

@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <style>body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  /* do not increase min-width as some may use split screens */
+  min-width: 800px;
+  color: #999;
+}
+
+h1 {
+  font-size: 24px;
+  color: black;
+}
+
+h2 {
+  font-size: 16px;
+  color: black;
+}
+
+p {
+  color: black;
+}
+
+a {
+  color: #999;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/******************************
+ * SUMMARY INFORMATION
+ ******************************/
+#environment td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+}
+#environment tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+
+/******************************
+ * TEST RESULT COLORS
+ ******************************/
+span.passed,
+.passed .col-result {
+  color: green;
+}
+
+span.skipped,
+span.xfailed,
+span.rerun,
+.skipped .col-result,
+.xfailed .col-result,
+.rerun .col-result {
+  color: orange;
+}
+
+span.error,
+span.failed,
+span.xpassed,
+.error .col-result,
+.failed .col-result,
+.xpassed .col-result {
+  color: red;
+}
+
+/******************************
+ * RESULTS TABLE
+ *
+ * 1. Table Layout
+ * 2. Extra
+ * 3. Sorting items
+ *
+ ******************************/
+/*------------------
+ * 1. Table Layout
+ *------------------*/
+#results-table {
+  border: 1px solid #e6e6e6;
+  color: #999;
+  font-size: 12px;
+  width: 100%;
+}
+#results-table th,
+#results-table td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+  text-align: left;
+}
+#results-table th {
+  font-weight: bold;
+}
+
+/*------------------
+ * 2. Extra
+ *------------------*/
+.log {
+  background-color: #e6e6e6;
+  border: 1px solid #e6e6e6;
+  color: black;
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  height: 230px;
+  overflow-y: scroll;
+  padding: 5px;
+  white-space: pre-wrap;
+}
+.log:only-child {
+  height: inherit;
+}
+
+div.image {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.image img {
+  width: 320px;
+}
+
+div.video {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.video video {
+  overflow: hidden;
+  width: 320px;
+  height: 240px;
+}
+
+.collapsed {
+  display: none;
+}
+
+.expander::after {
+  content: " (show details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.collapser::after {
+  content: " (hide details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+/*------------------
+ * 3. Sorting items
+ *------------------*/
+.sortable {
+  cursor: pointer;
+}
+
+.sort-icon {
+  font-size: 0px;
+  float: left;
+  margin-right: 5px;
+  margin-top: 5px;
+  /*triangle*/
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+.inactive .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #E6E6E6;
+}
+.asc.active .sort-icon {
+  /*finish triangle*/
+  border-bottom: 8px solid #999;
+}
+.desc.active .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #999;
+}
+</style></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) { // eslint-disable-line no-redeclare
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function findAll(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sortColumn(elem) {
+    toggleSortStates(elem);
+    const colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    let key;
+    if (elem.classList.contains('result')) {
+        key = keyResult;
+    } else if (elem.classList.contains('links')) {
+        key = keyLink;
+    } else {
+        key = keyAlpha;
+    }
+    sortTable(elem, key(colIndex));
+}
+
+function showAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(showExtras);
+}
+
+function hideAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(hideExtras);
+}
+
+function showExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.remove('collapsed');
+    expandcollapse.classList.remove('expander');
+    expandcollapse.classList.add('collapser');
+}
+
+function hideExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.add('collapsed');
+    expandcollapse.classList.remove('collapser');
+    expandcollapse.classList.add('expander');
+}
+
+function showFilters() {
+    const filterItems = document.getElementsByClassName('filter');
+    for (let i = 0; i < filterItems.length; i++)
+        filterItems[i].hidden = false;
+}
+
+function addCollapse() {
+    // Add links for show/hide all
+    const resulttable = find('table#results-table');
+    const showhideall = document.createElement('p');
+    showhideall.innerHTML = '<a href="javascript:showAllExtras()">Show all details</a> / ' +
+                            '<a href="javascript:hideAllExtras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    findAll('.col-result').forEach(function(elem) {
+        const collapsed = getQueryParameter('collapsed') || 'Passed';
+        const extras = elem.parentNode.nextElementSibling;
+        const expandcollapse = document.createElement('span');
+        if (extras.classList.contains('collapsed')) {
+            expandcollapse.classList.add('expander');
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add('collapsed');
+            expandcollapse.classList.add('expander');
+        } else {
+            expandcollapse.classList.add('collapser');
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener('click', function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains('collapsed')) {
+                showExtras(event.currentTarget);
+            } else {
+                hideExtras(event.currentTarget);
+            }
+        });
+    });
+}
+
+function getQueryParameter(name) {
+    const match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () { // eslint-disable-line no-unused-vars
+    resetSortHeaders();
+
+    addCollapse();
+
+    showFilters();
+
+    sortColumn(find('.initial-sort'));
+
+    findAll('.sortable').forEach(function(elem) {
+        elem.addEventListener('click',
+            function() {
+                sortColumn(elem);
+            }, false);
+    });
+}
+
+function sortTable(clicked, keyFunc) {
+    const rows = findAll('.results-table-row');
+    const reversed = !clicked.classList.contains('asc');
+    const sortedRows = sort(rows, keyFunc, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    const thead = document.getElementById('results-table-head');
+    document.getElementById('results-table').remove();
+    const parent = document.createElement('table');
+    parent.id = 'results-table';
+    parent.appendChild(thead);
+    sortedRows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName('BODY')[0].appendChild(parent);
+}
+
+function sort(items, keyFunc, reversed) {
+    const sortArray = items.map(function(item, i) {
+        return [keyFunc(item), i];
+    });
+
+    sortArray.sort(function(a, b) {
+        const keyA = a[0];
+        const keyB = b[0];
+
+        if (keyA == keyB) return 0;
+
+        if (reversed) {
+            return keyA < keyB ? 1 : -1;
+        } else {
+            return keyA > keyB ? 1 : -1;
+        }
+    });
+
+    return sortArray.map(function(item) {
+        const index = item[1];
+        return items[index];
+    });
+}
+
+function keyAlpha(colIndex) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[colIndex].firstChild.data.toLowerCase();
+    };
+}
+
+function keyLink(colIndex) {
+    return function(elem) {
+        const dataCell = elem.childNodes[1].childNodes[colIndex].firstChild;
+        return dataCell == null ? '' : dataCell.innerText.toLowerCase();
+    };
+}
+
+function keyResult(colIndex) {
+    return function(elem) {
+        const strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+            'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[colIndex].firstChild.data);
+    };
+}
+
+function resetSortHeaders() {
+    findAll('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    findAll('.sortable').forEach(function(elem) {
+        const icon = document.createElement('div');
+        icon.className = 'sort-icon';
+        icon.textContent = 'vvv';
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove('desc', 'active');
+        elem.classList.add('asc', 'inactive');
+    });
+}
+
+function toggleSortStates(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        resetSortHeaders();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function isAllRowsHidden(value) {
+    return value.hidden == false;
+}
+
+function filterTable(elem) { // eslint-disable-line no-unused-vars
+    const outcomeAtt = 'data-test-result';
+    const outcome = elem.getAttribute(outcomeAtt);
+    const classOutcome = outcome + ' results-table-row';
+    const outcomeRows = document.getElementsByClassName(classOutcome);
+
+    for(let i = 0; i < outcomeRows.length; i++){
+        outcomeRows[i].hidden = !elem.checked;
+    }
+
+    const rows = findAll('.results-table-row').filter(isAllRowsHidden);
+    const allRowsHidden = rows.length == 0 ? true : false;
+    const notFoundMessage = document.getElementById('not-found-message');
+    notFoundMessage.hidden = !allRowsHidden;
+}
+</script>
+    <h1>🚀 Cflow Automation Test Report</h1>
+    <p>Report generated on 03-Oct-2025 at 23:16:29 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v3.1.1</p>
+    <h2>Summary</h2>
+    <tr>
+      <td style="background: linear-gradient(90deg, #e0f7fa, #b2ebf2);padding:10px 14px;border-radius:8px;font-family:Arial, sans-serif;font-size:18px;color:#000;display:flex;align-items:center;"><span style="font-weight:bold; color:#1976d2;">📝 Project Name: </span><span style="font-weight:800; color:#1976d2;">Cflow Automation 🏆</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#388e3c;">📂 Module Name: </span><span style="font-weight:800; color:#388e3c;">AUTOMATION PAGE - RULE CONDITIONS - VERIFICATION</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#f57c00;">👤 Tester: </span><span style="font-weight:800; color:#f57c00;">Dinesh Aravinth ⚡</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#00796b;">🌐 Browser: </span><span style="font-weight:800; color:#00796b;">chrome</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#512da8;">🌍 Region: </span><span style="font-weight:800; color:#512da8;">EU</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#d32f2f;">⏰ Execution Time: </span><span style="font-weight:800; color:#d32f2f;">03-Oct-2025 23:16:29</span></td></tr>
+    <p>9 tests ran in 472.35 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="passed">9 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable" col="duration">Duration</th>
+          <th class="sortable links" col="links">Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s1_equal_to</td>
+          <td class="col-duration">78.30</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stdout setup------------------------------ <br/>Starting browser setup: chrome | Region: EU
+✅ Browser launched successfully
+💚 🏆 ✨ verify_login_url_EU: URL verification passed: https://eu.cflowapps.com/cflow/login
+➡️  Navigating to URL: https://eu.cflowapps.com/cflow/login for region: EU
+✅ Entered &#x27;EUclfowignore1.com&#x27; into Client ID
+✅ Entered &#x27;EUcflowignore@EUclfowignore1.com&#x27; into Username
+✅ Entered &#x27;1234567890&#x27; into Password
+✅ Clicked: Login Button
+💚 🏆 ✨ verify_dashboard_page: Page verification passed. Element found: //p[contains(.,&#x27;Dashboard&#x27;)]
+<br/> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S1 Equal To Rule Verification 🔹
+
+✅ Clicked: Workflows
+✅ Clicked: AUTOMATION PAGE - RULES ENGINE CONDITIONS --- WORKFLOW
+✅ Clicked: Add New record button
+⚠️ S1 Negative values to test: aravinth, testuser, demo,   
+⚠️ S1 Positive values to test: dinesh
+⚠️ S1 CAPS Positive value to test: DINESH
+➡️ Testing value: &#x27;aravinth&#x27; (Negative)
+✅ Entered &#x27;aravinth&#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 135, Current Status: Initiator
+💚  ✅ Negative value &#x27;aravinth&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 135
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;testuser&#x27; (Negative)
+✅ Entered &#x27;testuser&#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 135, Current Status: Initiator
+💚  ✅ Negative value &#x27;testuser&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 135
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;demo&#x27; (Negative)
+✅ Entered &#x27;demo&#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 135, Current Status: Initiator
+💚  ✅ Negative value &#x27;demo&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 135
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;  &#x27; (Negative)
+✅ Entered &#x27;  &#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 135, Current Status: Initiator
+💚  ✅ Negative value &#x27;  &#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 135
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;dinesh&#x27; (Positive)
+✅ Entered &#x27;dinesh&#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 135, Current Status: S1(EQUAL TO)
+💚  ✅ Positive value &#x27;dinesh&#x27; correctly moved to S1(EQUAL TO)
+➡️ Testing value (CAPS): &#x27;DINESH&#x27;
+✅ Clicked: Add New Record
+✅ Entered &#x27;DINESH&#x27; into S1 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 136, Current Status: S1(EQUAL TO)
+💚  ✅ CAPS Positive value &#x27;DINESH&#x27; correctly moved to S1(EQUAL TO)
+
+🔹 Completed S1 Equal To Rule Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s2_not_equal_to</td>
+          <td class="col-duration">48.75</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S2 Not Equal To Rule Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S2 Negative values to test: dinesh, DINESH,   
+⚠️ S2 Positive values to test: testuser, demo
+➡️ Testing value: &#x27;dinesh&#x27; (Negative)
+✅ Entered &#x27;dinesh&#x27; into S2 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 137, Current Status: Initiator
+💚  ✅ Negative value &#x27;dinesh&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 137
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;DINESH&#x27; (Negative)
+✅ Entered &#x27;DINESH&#x27; into S2 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 137, Current Status: Initiator
+💚  ✅ Negative value &#x27;DINESH&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 137
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;  &#x27; (Negative)
+✅ Entered &#x27;  &#x27; into S2 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 137, Current Status: Initiator
+💚  ✅ Negative value &#x27;  &#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 137
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing value: &#x27;testuser&#x27; (Positive)
+✅ Entered &#x27;testuser&#x27; into S2 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 137, Current Status: S2(NOT EQUAL TO)
+💚  ✅ Positive value &#x27;testuser&#x27; correctly moved to S2(NOT EQUAL TO)
+➡️ Testing value: &#x27;demo&#x27; (Positive)
+➡️ Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;demo&#x27; into S2 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 138, Current Status: S2(NOT EQUAL TO)
+💚  ✅ Positive value &#x27;demo&#x27; correctly moved to S2(NOT EQUAL TO)
+
+🔹 Completed S2 Not Equal To Rule Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s3_numeric_rule_less_than</td>
+          <td class="col-duration">45.57</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S3 Less Than Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S3 Negative values to test: 50, 25, 5005
+⚠️ S3 Positive values to test: 20, 0, -50
+➡️ Testing negative value: 50
+✅ Entered &#x27;50&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 139, Current Status: Initiator
+✅ S3 Negative value &#x27;50&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 139
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 25
+✅ Entered &#x27;25&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 139, Current Status: Initiator
+✅ S3 Negative value &#x27;25&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 139
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 5005
+✅ Entered &#x27;5005&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 139, Current Status: Initiator
+✅ S3 Negative value &#x27;5005&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 139
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: 20
+✅ Entered &#x27;20&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 139, Current Status: S3(LESS THAN)
+💚  ✅ Positive value &#x27;20&#x27; correctly moved to S3(LESS THAN)
+➡️ Testing positive value: 0
+✅ Clicked: Add New Record
+✅ Entered &#x27;0&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 140, Current Status: S3(LESS THAN)
+💚  ✅ Positive value &#x27;0&#x27; correctly moved to S3(LESS THAN)
+➡️ Testing positive value: -50
+✅ Clicked: Add New Record
+✅ Entered &#x27;-50&#x27; into S3 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 141, Current Status: S3(LESS THAN)
+💚  ✅ Positive value &#x27;-50&#x27; correctly moved to S3(LESS THAN)
+
+🔹 Completed S3 Less Than Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s4_numeric_rule_less_than_or_equal_to</td>
+          <td class="col-duration">50.98</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S4 Less Than or Equal to Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S4 Negative values to test: 50, 100, 5005
+⚠️ S4 Positive values to test: 25, 20, 0, -10
+➡️ Testing negative value: 50
+✅ Entered &#x27;50&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 142, Current Status: Initiator
+✅ S4 Negative value &#x27;50&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 142
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 100
+✅ Entered &#x27;100&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 142, Current Status: Initiator
+✅ S4 Negative value &#x27;100&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 142
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 5005
+✅ Entered &#x27;5005&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 142, Current Status: Initiator
+✅ S4 Negative value &#x27;5005&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 142
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: 25
+✅ Entered &#x27;25&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 142, Current Status: S4(LESS THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;25&#x27; correctly moved to S4(LESS THAN OR EQUAL TO)
+➡️ Testing positive value: 20
+✅ Clicked: Add New Record
+✅ Entered &#x27;20&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 143, Current Status: S4(LESS THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;20&#x27; correctly moved to S4(LESS THAN OR EQUAL TO)
+➡️ Testing positive value: 0
+✅ Clicked: Add New Record
+✅ Entered &#x27;0&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 144, Current Status: S4(LESS THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;0&#x27; correctly moved to S4(LESS THAN OR EQUAL TO)
+➡️ Testing positive value: -10
+✅ Clicked: Add New Record
+✅ Entered &#x27;-10&#x27; into S4 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 145, Current Status: S4(LESS THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;-10&#x27; correctly moved to S4(LESS THAN OR EQUAL TO)
+
+🔹 Completed S4 Less Than or Equal to Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s5_numeric_rule_greater_than</td>
+          <td class="col-duration">53.73</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S5 Greater Than Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S5 Negative values to test: 25, 20, 0, -10
+⚠️ S5 Positive values to test: 51, 500, 555
+➡️ Testing negative value: 25
+✅ Entered &#x27;25&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 146, Current Status: Initiator
+✅ S5 Negative value &#x27;25&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 146
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 20
+✅ Entered &#x27;20&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 146, Current Status: Initiator
+✅ S5 Negative value &#x27;20&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 146
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 0
+✅ Entered &#x27;0&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 146, Current Status: Initiator
+✅ S5 Negative value &#x27;0&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 146
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: -10
+✅ Entered &#x27;-10&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 146, Current Status: Initiator
+✅ S5 Negative value &#x27;-10&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 146
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: 51
+✅ Entered &#x27;51&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 146, Current Status: S5(GREATER THAN)
+💚  ✅ Positive value &#x27;51&#x27; correctly moved to S5(GREATER THAN)
+➡️ Testing positive value: 500
+✅ Clicked: Add New Record
+✅ Entered &#x27;500&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 147, Current Status: S5(GREATER THAN)
+💚  ✅ Positive value &#x27;500&#x27; correctly moved to S5(GREATER THAN)
+➡️ Testing positive value: 555
+✅ Clicked: Add New Record
+✅ Entered &#x27;555&#x27; into S5 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 148, Current Status: S5(GREATER THAN)
+💚  ✅ Positive value &#x27;555&#x27; correctly moved to S5(GREATER THAN)
+
+🔹 Completed S5 Greater Than Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s6_numeric_rule_greater_than_or_equal_to</td>
+          <td class="col-duration">44.87</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S6 Greater Than or Equal to Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S6 Negative values to test: 20, 0, -10
+⚠️ S6 Positive values to test: 50, 51, 1000
+➡️ Testing negative value: 20
+✅ Entered &#x27;20&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 149, Current Status: Initiator
+✅ S6 Negative value &#x27;20&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 149
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: 0
+✅ Entered &#x27;0&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 149, Current Status: Initiator
+✅ S6 Negative value &#x27;0&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 149
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: -10
+✅ Entered &#x27;-10&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 149, Current Status: Initiator
+✅ S6 Negative value &#x27;-10&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 149
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: 50
+✅ Entered &#x27;50&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 149, Current Status: S6(GREATER THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;50&#x27; correctly moved to S6(GREATER THAN OR EQUAL TO)
+➡️ Testing positive value: 51
+✅ Clicked: Add New Record
+✅ Entered &#x27;51&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 150, Current Status: S6(GREATER THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;51&#x27; correctly moved to S6(GREATER THAN OR EQUAL TO)
+➡️ Testing positive value: 1000
+✅ Clicked: Add New Record
+✅ Entered &#x27;1000&#x27; into S6 TextBox INT
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 151, Current Status: S6(GREATER THAN OR EQUAL TO)
+💚  ✅ Positive value &#x27;1000&#x27; correctly moved to S6(GREATER THAN OR EQUAL TO)
+
+🔹 Completed S6 Greater Than or Equal to Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s7_contains</td>
+          <td class="col-duration">52.98</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S7 Contains Rule Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S7 Negative values to test: X, Y, Z,  
+⚠️ S7 Positive values to test: A, B, C
+➡️ Testing negative value: &#x27;X&#x27; (Negative)
+✅ Entered &#x27;X&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 152, Current Status: Initiator
+💚  ✅  Negative value &#x27;X&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 152
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27;Y&#x27; (Negative)
+✅ Entered &#x27;Y&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 152, Current Status: Initiator
+💚  ✅  Negative value &#x27;Y&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 152
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27;Z&#x27; (Negative)
+✅ Entered &#x27;Z&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 152, Current Status: Initiator
+💚  ✅  Negative value &#x27;Z&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 152
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27; &#x27; (Negative)
+✅ Entered &#x27; &#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 152, Current Status: Initiator
+💚  ✅  Negative value &#x27; &#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 152
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: &#x27;A&#x27; (Positive)
+✅ Entered &#x27;A&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 152, Current Status: S7(CONTAINS)
+💚  ✅  Positive value &#x27;A&#x27; correctly moved to S7(CONTAINS)
+➡️ Testing positive value: &#x27;B&#x27; (Positive)
+➡️ Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;B&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 153, Current Status: S7(CONTAINS)
+💚  ✅  Positive value &#x27;B&#x27; correctly moved to S7(CONTAINS)
+➡️ Testing positive value: &#x27;C&#x27; (Positive)
+➡️ Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;C&#x27; into S7 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 154, Current Status: S7(CONTAINS)
+💚  ✅  Positive value &#x27;C&#x27; correctly moved to S7(CONTAINS)
+
+🔹 Completed S7 Contains Rule Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s8_does_not_contains</td>
+          <td class="col-duration">53.35</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S8 Does Not Contains Rule Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S8 Negative values to test: A, B, C,  
+⚠️ S8 Positive values to test: X, Y, Z
+➡️ Testing negative value: &#x27;A&#x27; (Negative)
+✅ Entered &#x27;A&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 155, Current Status: Initiator
+💚  ✅  Negative value &#x27;A&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 155
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27;B&#x27; (Negative)
+✅ Entered &#x27;B&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 155, Current Status: Initiator
+💚  ✅  Negative value &#x27;B&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 155
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27;C&#x27; (Negative)
+✅ Entered &#x27;C&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 155, Current Status: Initiator
+💚  ✅  Negative value &#x27;C&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 155
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing negative value: &#x27; &#x27; (Negative)
+✅ Entered &#x27; &#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 155, Current Status: Initiator
+💚  ✅  Negative value &#x27; &#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 155
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️ Testing positive value: &#x27;X&#x27; (Positive)
+✅ Entered &#x27;X&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 155, Current Status: S8(DOES NOT CONTAINS)
+💚  ✅  Positive value &#x27;X&#x27; correctly moved to S8(DOES NOT CONTAINS)
+➡️ Testing positive value: &#x27;Y&#x27; (Positive)
+➡️ Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;Y&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 156, Current Status: S8(DOES NOT CONTAINS)
+💚  ✅  Positive value &#x27;Y&#x27; correctly moved to S8(DOES NOT CONTAINS)
+➡️ Testing positive value: &#x27;Z&#x27; (Positive)
+➡️ Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;Z&#x27; into S8 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 157, Current Status: S8(DOES NOT CONTAINS)
+💚  ✅  Positive value &#x27;Z&#x27; correctly moved to S8(DOES NOT CONTAINS)
+
+🔹 Completed S8 Does Not Contains Rule Verification 🔹
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_F_rulesengine_conditions_verifcations.py::Test_001_rulesengine_conditions_verifications::test_s9_partial_match</td>
+          <td class="col-duration">43.73</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>
+🔹 Starting S9 Partial Match Rule Verification 🔹
+
+✅ Clicked: Add New record button
+⚠️ S9 Negative values to test: Test, demo,   
+⚠️ S9 Positive values to test: ARAVINTHDINESHARAVINTH, Hi Dinesh, Dinesh123
+⚠️ S9 Partial match target: &#x27;Dinesh&#x27;
+➡️  Testing negative value: &#x27;Test&#x27;
+✅ Entered &#x27;Test&#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 158, Current Status: Initiator
+💚  ✅  Negative value &#x27;Test&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 158
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️  Testing negative value: &#x27;demo&#x27;
+✅ Entered &#x27;demo&#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 158, Current Status: Initiator
+💚  ✅  Negative value &#x27;demo&#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 158
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️  Testing negative value: &#x27;  &#x27;
+✅ Entered &#x27;  &#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 158, Current Status: Initiator
+💚  ✅  Negative value &#x27;  &#x27; correctly stayed in Initiator stage
+✅ Clicked: Reopen Record ID 158
+💚 🏆 ✨ verify_form_page: Page verification passed. Element found: (//span[contains(.,&#x27;Form&#x27;)])[2]
+➡️  Testing positive value: &#x27;ARAVINTHDINESHARAVINTH&#x27;
+✅ Entered &#x27;ARAVINTHDINESHARAVINTH&#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 158, Current Status: S9(PARTIAL MATCH)
+💚  ✅  Positive value &#x27;ARAVINTHDINESHARAVINTH&#x27; correctly moved to S9(PARTIAL MATCH)
+➡️  Testing positive value: &#x27;Hi Dinesh&#x27;
+➡️  Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;Hi Dinesh&#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 159, Current Status: S9(PARTIAL MATCH)
+💚  ✅  Positive value &#x27;Hi Dinesh&#x27; correctly moved to S9(PARTIAL MATCH)
+➡️  Testing positive value: &#x27;Dinesh123&#x27;
+➡️  Creating new record for next positive value...
+✅ Clicked: Add New Record
+✅ Entered &#x27;Dinesh123&#x27; into S9 TextBox
+✅ Clicked: Submit Form
+✅ Scrolled to element: //span[contains(.,&#x27;Current Status&#x27;)]
+✅ Latest Record ID: 160, Current Status: S9(PARTIAL MATCH)
+💚  ✅  Positive value &#x27;Dinesh123&#x27; correctly moved to S9(PARTIAL MATCH)
+
+🔹 Completed S9 Partial Match Rule Verification 🔹
+
+<br/></div></td></tr></tbody></table></body></html>

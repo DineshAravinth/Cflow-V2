@@ -11,11 +11,56 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.action_chains import ActionChains
 from datetime import datetime
 
-
 class BaseHelpers:
+
+    dashboard_page_xpath = "//p[contains(.,'Dashboard')]"
+    workflow_setup_xpath = "(//div[contains(.,'Workflow Setup')])[5]"
+    stage_creation_xpath = "//button[contains(.,'Stage Creation')]"
+    form_creation_xpath = "//button[contains(.,'Form Creation')]"
+    form_page_xpath = "(//span[contains(.,'Form')])[2]"
+
     def __init__(self, driver, timeout=30):
         self.driver = driver
         self.wait = WebDriverWait(driver, timeout)
+
+    def verify_dashboard_page(self):
+        locator = (By.XPATH, self.dashboard_page_xpath)
+        self.verify_page_by_element(locator, "verify_dashboard_page")
+
+    def verify_workflow_setup_page(self):
+        locator = (By.XPATH, self.workflow_setup_xpath)
+        self.verify_page_by_element(locator, "verify_workflow_setup_page")
+
+    def verify_stage_creation_page(self):
+        locator = (By.XPATH, self.stage_creation_xpath)
+        self.verify_page_by_element(locator, "verify_stage_creation_page")
+
+    def verify_form_creation_page(self):
+        locator = (By.XPATH, self.form_creation_xpath)
+        self.verify_page_by_element(locator, "verify_form_creation_page")
+
+    def verify_section_present(self, section_name):
+        """
+        Verify that a section (e.g., Main Section, Table Section) is present on the page.
+        """
+        locator = (By.XPATH, f"//p[contains(.,'{section_name}')]")
+        method_name = f"verify_section_present_{section_name.replace(' ', '_')}"
+        self.verify_element_present(locator, method_name)
+
+    def verify_initiator_stage_page(self):
+        locator = (By.XPATH, "(//span[contains(.,'Initiator')])[2]")
+        self.verify_page_by_element(locator, "verify_initiator_stage_inbox_page")
+
+    def verify_form_page(self):
+        locator = (By.XPATH, self.form_page_xpath)
+        self.verify_page_by_element(locator, "verify_form_page")
+
+    def verify_stage_inbox_page(self, stage_name):
+        locator = (By.XPATH, f"(//span[contains(.,'{stage_name}')])[2]")
+        method_name = f"verify_{stage_name}_stage_inbox_page"
+        self.verify_page_by_element(locator, method_name)
+
+
 
     def click(self, xpath, description="element", retries=3):
         """Click an element safely, handling intercepted clicks and stale elements."""

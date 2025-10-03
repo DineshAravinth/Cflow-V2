@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from datetime import datetime
 from py.xml import html
 
+
 # PageObjects + Utilities
 from PageObjects.A_loginpage import LoginPage
 from Utilities.readProperties import ReadConfig
@@ -116,14 +117,10 @@ def login(setup, region):
         lp.clickLogin()
         sleep(3)
 
+
         # Verify Dashboard page
         base = BaseHelpers(driver)
-        base.verify_page_by_element(
-            (By.XPATH, "//p[contains(.,'Dashboard')]"),
-            method_name=f"verify_dashboard_after_login_{region}"
-        )
-
-        print("✅ Logged in successfully")
+        base.verify_dashboard_page()
 
     except Exception as e:
         print(f"❌ Login failed: {e}")
@@ -133,9 +130,7 @@ def login(setup, region):
 
 
 # conftest.py (root folder)
-import pytest
-from datetime import datetime
-from py.xml import html  # required for pytest-html v3.x
+  # required for pytest-html v3.x
 
 # ---------- Set HTML report title ----------
 @pytest.mark.optionalhook
@@ -149,6 +144,9 @@ def pytest_html_results_summary(prefix, summary, postfix):
     timestamp = datetime.now().strftime("%d-%b-%Y %H:%M:%S")
 
     # CLI info or defaults
+    projectname = "Cflow Automation 🏆"
+    modulename = "Workflow Creation and Submission"
+    tester = "Dinesh Aravinth ⚡"
     browser = "chrome"
     region = "ME"
 
@@ -170,15 +168,15 @@ def pytest_html_results_summary(prefix, summary, postfix):
     metadata_html = html.tr([
         html.td([
             html.span("📝 Project Name: ", style="font-weight:bold; color:#1976d2;"),
-            html.span("Cflow Automation 🏆", style="font-weight:800; color:#1976d2;"),
+            html.span(projectname, style="font-weight:800; color:#1976d2;"),
             html.span(" | ", style=separator_style),
 
             html.span("📂 Module Name: ", style="font-weight:bold; color:#388e3c;"),
-            html.span("Workflow Creation and Submission", style="font-weight:800; color:#388e3c;"),
+            html.span(modulename, style="font-weight:800; color:#388e3c;"),
             html.span(" | ", style=separator_style),
 
             html.span("👤 Tester: ", style="font-weight:bold; color:#f57c00;"),
-            html.span("Dinesh Aravinth ⚡", style="font-weight:800; color:#f57c00;"),
+            html.span(tester, style="font-weight:800; color:#f57c00;"),
             html.span(" | ", style=separator_style),
 
             html.span("🌐 Browser: ", style="font-weight:bold; color:#00796b;"),

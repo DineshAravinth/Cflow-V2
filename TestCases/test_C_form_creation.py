@@ -13,24 +13,11 @@ class Test_001_WorkflowSetup:
 
         driver = login
         base = BaseHelpers(driver)
-
-        # # ✅ Verify Login URL
-        # expected_login_url = f"https://{region.lower()}.cflowapps.com/cflow/login"
-        # base.verify_page_url(expected_login_url, f"test_loginpage_url_{region}")
-
-        # ✅ Verify Dashboard page by unique element
-        base.verify_page_by_element(
-            (By.XPATH, "//p[contains(.,'Dashboard')]"),
-            method_name="verify_dashboard_after_login")
-
         cw = CreateWorkflow(driver)
 
 
         cw.open_workflow_setup()
-
-        base.verify_page_by_element(
-            (By.XPATH, "(//div[contains(.,'Workflow Setup')])[5]"),
-            "verify_workflow_setup_page")
+        base.verify_workflow_setup_page()
 
         cw.click_add_new_workflow()
 
@@ -42,10 +29,7 @@ class Test_001_WorkflowSetup:
         print(f"✅ Workflow '{workflow_name}' created in {region} region")
         assert workflow_name, "❌ Workflow name is empty"
 
-        base.verify_page_by_element(
-            (By.XPATH, "//button[contains(.,'Stage Creation')]"),
-            "verify_stage_creation_page")
-
+        base.verify_stage_creation_page()
 
 # ---------- Stage Creation (Stage 1 + Stage 2) ----------
 @pytest.mark.order(2)
@@ -96,11 +80,7 @@ class Test_003_FormMainSection:
         cw = CreateWorkflow(driver)
 
         cw.form_creation()
-
-        base.verify_page_by_element(
-            (By.XPATH, "//button[contains(.,'Form Creation')]"),
-            "verify_form_creation_page"
-        )
+        base.verify_form_creation_page()
 
         fc = FormCreation(driver)
 
@@ -110,12 +90,9 @@ class Test_003_FormMainSection:
         section_name = "Main Section"
         fc.section_name(section_name)
         fc.save_section()
-
         sleep(2)
 
-        base.verify_element_present(
-            (By.XPATH, f"//p[contains(.,'{section_name}')]"),
-            f"verify_section-{section_name.replace(' ', '_')}")
+        base.verify_section_present(section_name)
 
         # Basic Fields
         fc.add_dropdown()
@@ -157,9 +134,7 @@ class Test_004_FormTableSection:
         fc.save_table_section()
         sleep(2)
 
-        base.verify_element_present(
-            (By.XPATH, f"//p[contains(.,'{table_section_name}')]"),
-            f"verify_table-section-{table_section_name.replace(' ', '_')}")
+        base.verify_section_present(table_section_name)
 
         # Table Fields
         sleep(2)

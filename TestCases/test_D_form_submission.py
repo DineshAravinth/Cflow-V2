@@ -128,9 +128,7 @@ class Test_005_Workflow_Form_submission:
         fs.click_submit_form_button()
         sleep(5)
 
-        base.verify_page_by_element(
-            (By.XPATH, "(//span[contains(.,'Initiator')])[2]"),
-            "verify_initiator_stage_inbox_page")
+        base.verify_initiator_stage_page()
 
         # 1️⃣ Submit the form
         # ------------------- PS1 -------------------

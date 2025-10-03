@@ -756,9 +756,8 @@ class FormSubmission:
         self.click(self.STAGE_OPTION.format(stage=stage_name), f"{stage_name} stage option")
         time.sleep(3)
 
-        self.base.verify_page_by_element(
-            (By.XPATH, f"(//span[contains(.,'{stage_name}')])[2]"),
-            f"verify_{stage_name}_stage_inbox_page")
+        #Page verification
+        self.base.verify_stage_inbox_page(stage_name)
 
         # 3. Wait for ID cells
         rows = self.wait.until(

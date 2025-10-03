@@ -9,19 +9,19 @@ from time import sleep
 
 # ---------- Workflow Setup ----------
 @pytest.mark.order(1)
-class Test_001_WorkflowSetup:
-    def test_create_workflow(self, login, region):
+class Test_001_new_workflow_creation:
+
+    def test_create_new_workflow_setup(self, login, region):
 
         driver = login
-        base = BaseHelpers(driver)
 
+        base = BaseHelpers(driver)
         cw = CreateWorkflow(driver)
 
         cw.open_workflow_setup()
-
         cw.click_add_new_workflow()
 
-        workflow_name = cw.enter_unique_workflow_name("Test Automate")
+        workflow_name = cw.enter_unique_workflow_name("Test Automation")
         cw.click_create_workflow()
 
         # Store workflow_name for later tests (pytest cache or fixture)
@@ -29,18 +29,18 @@ class Test_001_WorkflowSetup:
         print(f"✅ Workflow '{workflow_name}' created in {region} region")
         assert workflow_name, "❌ Workflow name is empty"
 
-        base.verify_page_by_element(
-            (By.XPATH, "//button[contains(.,'Stage Creation')]"),
-            "verify_stage_creation_page")
-
 
 # ---------- Stage Creation (Stage 1 + Stage 2) ----------
 @pytest.mark.order(2)
-class Test_002_StageCreation:
-    def test_create_stage1_and_stage2(self, login):
+class Test_002_stage_creation:
+
+    def test_create_stage1_stage2_stage3(self, login):
         driver = login
         base = BaseHelpers(driver)
         cw = CreateWorkflow(driver)
+
+        # Verify stage creation page
+        base.verify_stage_creation_page()
 
         # Stage 1
         sleep(3)
@@ -75,33 +75,32 @@ class Test_002_StageCreation:
 
 # ---------- Main Section Form ----------
 @pytest.mark.order(3)
-class Test_003_FormMainSection:
-    def test_form_main_section(self, login):
+class Test_003_form_creation_main_section:
+
+    def test_form_main_section_creation(self, login):
+
         driver = login
         base = BaseHelpers(driver)
         cw = CreateWorkflow(driver)
 
         cw.form_creation()
 
-        base.verify_page_by_element(
-            (By.XPATH, "//button[contains(.,'Form Creation')]"),
-            "verify_form_creation_page"
-        )
+        # Verify form creation page
+        base.verify_form_creation_page()
 
         fc = FormCreation(driver)
-
         # Main Section
+
         fc.add_section_dragdrop()
 
         section_name = "Main Section"
         fc.section_name(section_name)
         fc.save_section()
+        sleep(1)
 
-        sleep(2)
+        #to verify main section is present
 
-        base.verify_element_present(
-            (By.XPATH, f"//p[contains(.,'{section_name}')]"),
-            f"verify_section-{section_name.replace(' ', '_')}")
+        base.verify_section_present(section_name)
 
         # Basic Fields
         fc.add_dropdown()
@@ -130,23 +129,24 @@ class Test_003_FormMainSection:
 
 # ---------- Table Section Form ----------
 @pytest.mark.order(4)
-class Test_004_FormTableSection:
-    def test_form_table_section(self, login):
+class Test_004_from_creation_table_section:
+
+    def test_form_table_section_creation(self, login):
+
         driver = login
         base = BaseHelpers(driver)
         fc = FormCreation(driver)
 
         # Table Section
         fc.add_table_section_dragdrop()
+
         table_section_name = "Table Section"
         fc.table_section_name(table_section_name)
         fc.save_table_section()
         sleep(2)
 
-        base.verify_element_present(
-            (By.XPATH, f"//p[contains(.,'{table_section_name}')]"),
-            f"verify_table-section-{table_section_name.replace(' ', '_')}")
-
+        #to verify table section present
+        base.verify_section_present(table_section_name)
         # Table Fields
         sleep(2)
         fc.add_signature_table()
@@ -172,18 +172,18 @@ class Test_004_FormTableSection:
         driver.refresh()
         fc.click_go_to_workflow()
         sleep(3)
-        base.verify_page_by_element(
-            (By.XPATH, "(//span[contains(.,'Form')])[2]"),
-            "verify_form-submission_page"
-        )
 
 
 @pytest.mark.order(5)
-class Test_005_Workflow_Form_submission:
-    def test_form_submission(self, login, region):
+class Test_005_workflow_form_submit_initiator_to_end_stage:
+
+    def test_form_submission_initiator_to_endstage(self, login, region):
         driver = login
         base = BaseHelpers(driver)
         fs = FormSubmission(driver)
+
+        #To verify form page
+        base.verify_form_page()
 
         # --- Open workflow and start new record ---
         # fs.open_workflow()
@@ -298,9 +298,7 @@ class Test_005_Workflow_Form_submission:
         fs.click_submit_form_button()
         sleep(5)
 
-        base.verify_page_by_element(
-            (By.XPATH, "(//span[contains(.,'Initiator')])[2]"),
-            "verify_initiator_stage_inbox_page")
+        base.verify_initiator_stage_page()
 
         # 1️⃣ Submit the form
         # ------------------- PS1 -------------------

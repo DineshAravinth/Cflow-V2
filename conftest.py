@@ -145,7 +145,7 @@ def pytest_html_results_summary(prefix, summary, postfix):
 
     # CLI info or defaults
     projectname = "Cflow Automation 🏆"
-    modulename = "AUTOMATION PAGE - RULE CONDITIONS - VERIFICATION"
+    modulename = "LOOKUP CREATION AND SUBMISSION"
     tester = "Dinesh Aravinth ⚡"
     browser = "chrome"
     region = "EU"

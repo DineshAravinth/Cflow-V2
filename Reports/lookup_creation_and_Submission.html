@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <style>body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  /* do not increase min-width as some may use split screens */
+  min-width: 800px;
+  color: #999;
+}
+
+h1 {
+  font-size: 24px;
+  color: black;
+}
+
+h2 {
+  font-size: 16px;
+  color: black;
+}
+
+p {
+  color: black;
+}
+
+a {
+  color: #999;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/******************************
+ * SUMMARY INFORMATION
+ ******************************/
+#environment td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+}
+#environment tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+
+/******************************
+ * TEST RESULT COLORS
+ ******************************/
+span.passed,
+.passed .col-result {
+  color: green;
+}
+
+span.skipped,
+span.xfailed,
+span.rerun,
+.skipped .col-result,
+.xfailed .col-result,
+.rerun .col-result {
+  color: orange;
+}
+
+span.error,
+span.failed,
+span.xpassed,
+.error .col-result,
+.failed .col-result,
+.xpassed .col-result {
+  color: red;
+}
+
+/******************************
+ * RESULTS TABLE
+ *
+ * 1. Table Layout
+ * 2. Extra
+ * 3. Sorting items
+ *
+ ******************************/
+/*------------------
+ * 1. Table Layout
+ *------------------*/
+#results-table {
+  border: 1px solid #e6e6e6;
+  color: #999;
+  font-size: 12px;
+  width: 100%;
+}
+#results-table th,
+#results-table td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+  text-align: left;
+}
+#results-table th {
+  font-weight: bold;
+}
+
+/*------------------
+ * 2. Extra
+ *------------------*/
+.log {
+  background-color: #e6e6e6;
+  border: 1px solid #e6e6e6;
+  color: black;
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  height: 230px;
+  overflow-y: scroll;
+  padding: 5px;
+  white-space: pre-wrap;
+}
+.log:only-child {
+  height: inherit;
+}
+
+div.image {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.image img {
+  width: 320px;
+}
+
+div.video {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.video video {
+  overflow: hidden;
+  width: 320px;
+  height: 240px;
+}
+
+.collapsed {
+  display: none;
+}
+
+.expander::after {
+  content: " (show details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.collapser::after {
+  content: " (hide details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+/*------------------
+ * 3. Sorting items
+ *------------------*/
+.sortable {
+  cursor: pointer;
+}
+
+.sort-icon {
+  font-size: 0px;
+  float: left;
+  margin-right: 5px;
+  margin-top: 5px;
+  /*triangle*/
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+.inactive .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #E6E6E6;
+}
+.asc.active .sort-icon {
+  /*finish triangle*/
+  border-bottom: 8px solid #999;
+}
+.desc.active .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #999;
+}
+</style></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) { // eslint-disable-line no-redeclare
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function findAll(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sortColumn(elem) {
+    toggleSortStates(elem);
+    const colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    let key;
+    if (elem.classList.contains('result')) {
+        key = keyResult;
+    } else if (elem.classList.contains('links')) {
+        key = keyLink;
+    } else {
+        key = keyAlpha;
+    }
+    sortTable(elem, key(colIndex));
+}
+
+function showAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(showExtras);
+}
+
+function hideAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(hideExtras);
+}
+
+function showExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.remove('collapsed');
+    expandcollapse.classList.remove('expander');
+    expandcollapse.classList.add('collapser');
+}
+
+function hideExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.add('collapsed');
+    expandcollapse.classList.remove('collapser');
+    expandcollapse.classList.add('expander');
+}
+
+function showFilters() {
+    const filterItems = document.getElementsByClassName('filter');
+    for (let i = 0; i < filterItems.length; i++)
+        filterItems[i].hidden = false;
+}
+
+function addCollapse() {
+    // Add links for show/hide all
+    const resulttable = find('table#results-table');
+    const showhideall = document.createElement('p');
+    showhideall.innerHTML = '<a href="javascript:showAllExtras()">Show all details</a> / ' +
+                            '<a href="javascript:hideAllExtras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    findAll('.col-result').forEach(function(elem) {
+        const collapsed = getQueryParameter('collapsed') || 'Passed';
+        const extras = elem.parentNode.nextElementSibling;
+        const expandcollapse = document.createElement('span');
+        if (extras.classList.contains('collapsed')) {
+            expandcollapse.classList.add('expander');
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add('collapsed');
+            expandcollapse.classList.add('expander');
+        } else {
+            expandcollapse.classList.add('collapser');
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener('click', function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains('collapsed')) {
+                showExtras(event.currentTarget);
+            } else {
+                hideExtras(event.currentTarget);
+            }
+        });
+    });
+}
+
+function getQueryParameter(name) {
+    const match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () { // eslint-disable-line no-unused-vars
+    resetSortHeaders();
+
+    addCollapse();
+
+    showFilters();
+
+    sortColumn(find('.initial-sort'));
+
+    findAll('.sortable').forEach(function(elem) {
+        elem.addEventListener('click',
+            function() {
+                sortColumn(elem);
+            }, false);
+    });
+}
+
+function sortTable(clicked, keyFunc) {
+    const rows = findAll('.results-table-row');
+    const reversed = !clicked.classList.contains('asc');
+    const sortedRows = sort(rows, keyFunc, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    const thead = document.getElementById('results-table-head');
+    document.getElementById('results-table').remove();
+    const parent = document.createElement('table');
+    parent.id = 'results-table';
+    parent.appendChild(thead);
+    sortedRows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName('BODY')[0].appendChild(parent);
+}
+
+function sort(items, keyFunc, reversed) {
+    const sortArray = items.map(function(item, i) {
+        return [keyFunc(item), i];
+    });
+
+    sortArray.sort(function(a, b) {
+        const keyA = a[0];
+        const keyB = b[0];
+
+        if (keyA == keyB) return 0;
+
+        if (reversed) {
+            return keyA < keyB ? 1 : -1;
+        } else {
+            return keyA > keyB ? 1 : -1;
+        }
+    });
+
+    return sortArray.map(function(item) {
+        const index = item[1];
+        return items[index];
+    });
+}
+
+function keyAlpha(colIndex) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[colIndex].firstChild.data.toLowerCase();
+    };
+}
+
+function keyLink(colIndex) {
+    return function(elem) {
+        const dataCell = elem.childNodes[1].childNodes[colIndex].firstChild;
+        return dataCell == null ? '' : dataCell.innerText.toLowerCase();
+    };
+}
+
+function keyResult(colIndex) {
+    return function(elem) {
+        const strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+            'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[colIndex].firstChild.data);
+    };
+}
+
+function resetSortHeaders() {
+    findAll('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    findAll('.sortable').forEach(function(elem) {
+        const icon = document.createElement('div');
+        icon.className = 'sort-icon';
+        icon.textContent = 'vvv';
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove('desc', 'active');
+        elem.classList.add('asc', 'inactive');
+    });
+}
+
+function toggleSortStates(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        resetSortHeaders();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function isAllRowsHidden(value) {
+    return value.hidden == false;
+}
+
+function filterTable(elem) { // eslint-disable-line no-unused-vars
+    const outcomeAtt = 'data-test-result';
+    const outcome = elem.getAttribute(outcomeAtt);
+    const classOutcome = outcome + ' results-table-row';
+    const outcomeRows = document.getElementsByClassName(classOutcome);
+
+    for(let i = 0; i < outcomeRows.length; i++){
+        outcomeRows[i].hidden = !elem.checked;
+    }
+
+    const rows = findAll('.results-table-row').filter(isAllRowsHidden);
+    const allRowsHidden = rows.length == 0 ? true : false;
+    const notFoundMessage = document.getElementById('not-found-message');
+    notFoundMessage.hidden = !allRowsHidden;
+}
+</script>
+    <h1>🚀 Cflow Automation Test Report</h1>
+    <p>Report generated on 04-Oct-2025 at 17:26:10 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v3.1.1</p>
+    <h2>Summary</h2>
+    <tr>
+      <td style="background: linear-gradient(90deg, #e0f7fa, #b2ebf2);padding:10px 14px;border-radius:8px;font-family:Arial, sans-serif;font-size:18px;color:#000;display:flex;align-items:center;"><span style="font-weight:bold; color:#1976d2;">📝 Project Name: </span><span style="font-weight:800; color:#1976d2;">Cflow Automation 🏆</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#388e3c;">📂 Module Name: </span><span style="font-weight:800; color:#388e3c;">LOOKUP CREATION AND SUBMISSION</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#f57c00;">👤 Tester: </span><span style="font-weight:800; color:#f57c00;">Dinesh Aravinth ⚡</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#00796b;">🌐 Browser: </span><span style="font-weight:800; color:#00796b;">chrome</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#512da8;">🌍 Region: </span><span style="font-weight:800; color:#512da8;">EU</span><span style="margin:0 10px; font-weight:bold; color:#555;"> | </span><span style="font-weight:bold; color:#d32f2f;">⏰ Execution Time: </span><span style="font-weight:800; color:#d32f2f;">04-Oct-2025 17:26:10</span></td></tr>
+    <p>1 tests ran in 218.43 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="passed">1 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable" col="duration">Duration</th>
+          <th class="sortable links" col="links">Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">TestCases/test_G_lookup_creation.py::test_create_lookup_with_fields</td>
+          <td class="col-duration">218.40</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stdout setup------------------------------ <br/>Starting browser setup: chrome | Region: EU
+✅ Browser launched successfully
+💚 🏆 ✨ verify_login_url_EU: URL verification passed: https://eu.cflowapps.com/cflow/login
+➡️  Navigating to URL: https://eu.cflowapps.com/cflow/login for region: EU
+✅ Entered &#x27;EUclfowignore1.com&#x27; into Client ID
+✅ Entered &#x27;EUcflowignore@EUclfowignore1.com&#x27; into Username
+✅ Entered &#x27;1234567890&#x27; into Password
+✅ Clicked: Login Button
+💚 🏆 ✨ verify_dashboard_page: Page verification passed. Element found: //p[contains(.,&#x27;Dashboard&#x27;)]
+<br/> ------------------------------Captured stdout call------------------------------ <br/>✅ Clicked: Lookups
+✅ Clicked: Create Lookup button
+✅ Entered &#x27;Lookup Test Automation--04-10-2025-(17:22)&#x27; into Workflow Name
+⚡ Lookup Created: Lookup Test Automation--04-10-2025-(17:22)
+✅ Clicked: Create Lookup Name button
+✅ Clicked: Add Field button
+✅ Entered &#x27;TextBox&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;TextBox&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;CheckBox&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;CheckBox&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;CheckBox List&#x27; into Display Name
+✅ Entered &#x27;A,B,C,D&#x27; into Valid Values
+✅ Clicked: Save button
+✅  Lookup field - &#x27;CheckBox List&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Radio Button List&#x27; into Display Name
+✅ Entered &#x27;A,B,C,D&#x27; into Valid Values
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Radio Button List&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;TextBox MultiLine&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;TextBox MultiLine&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;DropDown List&#x27; into Display Name
+✅ Entered &#x27;A,B,C,D&#x27; into Valid Values
+✅ Clicked: Save button
+✅  Lookup field - &#x27;DropDown List&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;MS DropDown List&#x27; into Display Name
+✅ Entered &#x27;A,B,C,D&#x27; into Valid Values
+✅ Clicked: Save button
+✅  Lookup field - &#x27;MS DropDown List&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;HTML Editor&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;HTML Editor&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;File&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;File&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Email&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Email&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;IP Address&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;IP Address&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Number&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Number&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Decimal&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Decimal&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Identity&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Identity&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Currency&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Currency&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;Date&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;Date&#x27; created successfully!
+✅ Clicked: Add Field button in Lookup
+✅ Entered &#x27;URL&#x27; into Display Name
+✅ Clicked: Save button
+✅  Lookup field - &#x27;URL&#x27; created successfully!
+✅ Clicked: Publish Lookup button
+✅ Lookup &#x27;Lookup Test Automation--04-10-2025-(17:22)&#x27; created with all fields successfully.
+➡️ Now entering values for Lookup &#x27;Lookup Test Automation--04-10-2025-(17:22)&#x27;...
+✅ Clicked: Add Row Button
+✅ Label visible – TextBox
+✅ Entered &#x27;Test Automation&#x27; into TextBox Input
+✅ Label visible – Checkbox
+✅ Checkbox checked – Checkbox
+✅ Label visible – CheckBox List
+✅ Label visible – CheckBox List &#x27;A&#x27;
+✅ Checked &#x27;A&#x27; in CheckBox List
+✅ Label visible – CheckBox List &#x27;C&#x27;
+✅ Checked &#x27;C&#x27; in CheckBox List
+✅ Label visible – Radio Button List
+✅ Radio button &#x27;B&#x27; selected successfully under &#x27;Radio Button List&#x27;
+✅ Label visible – TextBox MultiLine
+✅ Entered &#x27;This is a multi-line text example.&#x27; into TextArea Input
+✅ Label visible – DropDown List
+✅ Lookup Dropdown selected: C
+✅ Label visible – MS DropDown List
+✅ Found label: MS DropDown List
+✅ Selected &#x27;A&#x27; in MS DropDown List
+✅ Selected &#x27;C&#x27; in MS DropDown List
+✅ Selected &#x27;D&#x27; in MS DropDown List
+✅ Label visible – HTML Editor
+✅ Entered &#x27;This is content for the HTML editor field.&#x27; into HTML Editor Input
+✅ Label visible – File Uploader
+✅ Clicked: Upload Icon
+✅ File selected: D:\DOWNLOADS (D)\Fat_Loss_Plan.pdf
+✅ Clicked: Upload Button
+✅ File uploaded successfully
+✅ Label visible – Email
+✅ Entered &#x27;test@example.com&#x27; into Email Input
+✅ Label visible – IP Address
+✅ Entered &#x27;192.168.0.1&#x27; into IP Address Input
+✅ Label visible – Number
+✅ Entered &#x27;12345&#x27; into Number Input
+✅ Label visible – Decimal
+✅ Entered &#x27;123.45&#x27; into Decimal Input
+✅ Label visible – Currency
+✅ Entered &#x27;999.99&#x27; into Currency Input
+✅ Label visible – Date
+✅ Clicked Date input for &#x27;Date&#x27;
+✅ Selected date &#x27;2025-10-04&#x27; for &#x27;Date&#x27;
+✅ Label visible – URL
+✅ Entered &#x27;https://example.com&#x27; into URL Input
+✅ Clicked: Save button
+✅ All Lookup fields have been filled successfully!
+<br/></div></td></tr></tbody></table></body></html>

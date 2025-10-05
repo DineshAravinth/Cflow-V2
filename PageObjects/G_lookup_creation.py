@@ -12,7 +12,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 class lookup_creation:
 
     side_nav_lookups = "(//span[contains(.,'Lookups')])[2]"
-    select_lookup = "//p[contains(.,'Lookup Test Automation--04-10-2025-(13:46)')]"
+    select_lookup = "//p[contains(.,'Lookup Test Automation--04-10-2025-(13:46) to Workflow')]"
 
     # Lookup creation
     create_lookup_button = "//button[contains(.,'Create Lookup')]"
@@ -440,3 +440,52 @@ class lookup_creation:
 
         except TimeoutException:
             raise AssertionError(f"❌ Failed to select date '{date_to_select}' for '{label_text}'")
+
+    # ---------- Common Table Value Helper ----------
+
+    def get_table_value_by_id(self, column_label, target_id=1):
+        """
+        Fetch a table cell value dynamically by column label and row ID.
+        Works even if there's only one row in the table.
+
+        Args:
+            column_label (str): Header name of the column to fetch (e.g., 'decimal')
+            target_id (int): The ID value in the table row to match (default=1)
+
+        Returns:
+            str | None: The cell value as string, or None if not found
+        """
+        try:
+            # 1️⃣ Find all header elements in the table
+            headers = self.driver.find_elements(By.XPATH, "//th")
+            column_index = None
+
+            # 2️⃣ Determine the index of the column that matches the given label
+            for idx, header in enumerate(headers, start=1):  # XPath is 1-based
+                header_text = header.text.strip()
+                if header_text.lower() == column_label.lower():
+                    column_index = idx
+                    break
+
+            if column_index is None:
+                print(f"❌ Column '{column_label}' not found in table headers.")
+                return None
+
+            # 3️⃣ Locate the table row where first cell (ID) matches target_id
+            rows = self.driver.find_elements(
+                By.XPATH,f"//tr[td//*[normalize-space(text())='{target_id}'] or td[normalize-space(text())='{target_id}']]")
+            if not rows:
+                print(f"❌ No row found with ID '{target_id}'.")
+                return None
+
+            # 4️⃣ Extract the specific cell using the dynamic column index
+            cell_xpath = f"td[{column_index}]"
+            cell = rows[0].find_element(By.XPATH, cell_xpath)
+            cell_value = cell.text.strip()
+
+            print(f"✅ Retrieved value '{cell_value}' from column '{column_label}' for row ID '{target_id}'.")
+            return cell_value
+
+        except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+            print(f"⛔ Error retrieving value from column '{column_label}': {e}")
+            return None

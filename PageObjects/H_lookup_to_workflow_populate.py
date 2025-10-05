@@ -17,6 +17,11 @@ class lookup_to_workflow_values:
     sidenav_workflow_setup = "(//span[contains(.,'Workflow Setup')])[1]"
     select_workflow = "//td[contains(normalize-space(.), 'Test Automate--04-10-2025') and contains(., 'from lookup')]"
     add_new_button_lookup = "(//a[contains(.,'Add New')])[2]"
+    save_button ="//button[contains(.,'Save')]"
+    go_to_workflow_button = "//button[contains(.,'Go to Workflow')]"
+
+    textbox_label = "//label[contains(.,'TextBox')]"
+    textbox_input = "//input[@id='TextBox']"
 
     def __init__(self, driver, timeout=30):
         self.driver = driver
@@ -51,6 +56,12 @@ class lookup_to_workflow_values:
     def click_add_new_button_lookup(self):
         """Clicks the Add New button for Lookup."""
         self.base.click(self.add_new_button_lookup, "Add New Lookup button")
+
+    def save_button_lookup(self):
+        self.base.click(self.save_button, "lookup to workflow setup saved")
+
+    def click_go_to_workflow(self):
+        self.base.click(self.go_to_workflow_button, "Go to Workflow Button")
 
     # ---------- Dropdown Selections (Main + Table) ----------
     def select_workflow_lookup_field(self, option_text, description="Select Workflow/Lookup Field", retries=3):
@@ -268,3 +279,88 @@ class lookup_to_workflow_values:
 
         # If all retries fail
         raise Exception("❌ Could not click 'Add New' button after multiple retries")
+
+    def populate_all_fields(self):
+        """
+        Select all predefined fields in Target Workflow / Lookup Field and Current Workflow Field tables.
+        """
+        fields_to_select = [
+            ("CheckBox", "Checkbox"),
+            ("CheckBox List", "Checkbox List"),
+            ("Radio Button List", "Radio Button"),
+            ("TextBox MultiLine", "Text Area"),
+            ("DropDown List", "Dropdown"),
+            ("MS DropDown List", "MS Dropdown"),
+            ("HTML Editor", "HTML Editor"),
+            ("File", "File Uploader"),
+            ("Email", "Email"),
+            ("IP Address", "IP Address"),
+            ("Number", "Number"),
+            ("Decimal", "Decimal"),
+            ("Currency", "Currency"),
+            ("Date", "Date"),
+            ("URL", "URL"),
+
+            #populate table fields
+            ("TextBox", "TextBox t"),
+            ("CheckBox", "Checkbox t"),
+            ("TextBox MultiLine", "Text Area t"),
+            ("DropDown List", "Dropdown t"),
+            ("MS DropDown List", "MS Dropdown t"),
+            ("File", "File Uploader t"),
+            ("Email", "Email t"),
+            ("IP Address", "IP Address t"),
+            ("Number", "Number t"),
+            ("Decimal", "Decimal t"),
+            ("Currency", "Currency t"),
+            ("Date", "Date t"),
+            ("URL", "URL t")
+        ]
+
+        for idx, (target, current) in enumerate(fields_to_select, start=1):
+            self.select_populate_target_workflow(target, row_index=idx)
+            sleep(1.5)
+            self.select_populate_current_workflow(current, row_index=idx)
+
+            # Click "Add New" only if not the last row
+            if idx != len(fields_to_select):
+                self.click_add_new_button_for_fields()
+
+    def textbox(self, value):
+        # Scroll to the label
+        self.base.scroll_to_label(self.textbox_label, "Table TextBox")
+
+        # Enter the text
+        self.base.enter_text(self.textbox_input, value, "Table TextBox Input")
+        sleep(2)
+        # Press Tab to move focus out
+        input_elem = self.driver.find_element(By.XPATH, self.textbox_input)
+        input_elem.send_keys(Keys.TAB)
+
+    def verify_decimal_workflow(self, label_text, expected_value):
+        """
+        Verify a decimal field in a workflow form against an expected value
+        and print the actual value.
+
+        Args:
+            driver (WebDriver): Selenium WebDriver instance
+            label_text (str): The label text of the workflow field
+            expected_value (float): The expected decimal value to verify
+        """
+        # Locate the label element by its text
+        label = self.driver.find_element(By.XPATH, f"//label[contains(text(), '{label_text}')]")
+
+        # Find the corresponding input field next to the label
+        input_field = label.find_element(By.XPATH, "following-sibling::input | following::input[1]")
+
+        # Get the actual value from the input field
+        actual_value = float(input_field.get_attribute("value").strip())
+
+        # Print the actual value
+        print(f"🔹 Actual value for '{label_text}': {actual_value}")
+
+        # Compare with expected value
+        if actual_value == expected_value:
+            print(f"✔ Decimal verification passed: {actual_value}")
+        else:
+            print(f"❌ Decimal verification failed: expected {expected_value}, got {actual_value}")

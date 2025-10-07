@@ -23,6 +23,11 @@ class lookup_to_workflow_values:
     textbox_label = "//label[contains(.,'TextBox')]"
     textbox_input = "//input[@id='TextBox']"
 
+    side_nav_workflows = "//a[contains(.,'Workflows')]"
+    open_workflow_lookup = "//span[contains(.,' Test Automate--04-10-2025-(19:37)  - from lookup ')]"
+    add_new_record_button = "//a[contains(.,'Add New')]"
+    submit_form_button = "//button[contains(.,'Submit Form')]"
+
     def __init__(self, driver, timeout=30):
         self.driver = driver
         self.wait = WebDriverWait(driver, timeout)
@@ -62,6 +67,18 @@ class lookup_to_workflow_values:
 
     def click_go_to_workflow(self):
         self.base.click(self.go_to_workflow_button, "Go to Workflow Button")
+
+    def open_workflow(self):
+        self.base.click(self.side_nav_workflows, "Workflows")
+
+    def open_workflow_lookup1(self):
+        self.base.click(self.open_workflow_lookup, "Workflows")
+
+    def click_add_new_record(self):
+        self.base.click(self.add_new_record_button, "Add New record button")
+
+    def click_submit_form_button(self):
+        self.base.click(self.submit_form_button,"submit form button")
 
     # ---------- Dropdown Selections (Main + Table) ----------
     def select_workflow_lookup_field(self, option_text, description="Select Workflow/Lookup Field", retries=3):
@@ -337,30 +354,79 @@ class lookup_to_workflow_values:
         input_elem = self.driver.find_element(By.XPATH, self.textbox_input)
         input_elem.send_keys(Keys.TAB)
 
-    def verify_decimal_workflow(self, label_text, expected_value):
+    def verify_decimal_workflow(self, label_text, expected_value, timeout=10):
         """
-        Verify a decimal field in a workflow form against an expected value
-        and print the actual value.
-
-        Args:
-            driver (WebDriver): Selenium WebDriver instance
-            label_text (str): The label text of the workflow field
-            expected_value (float): The expected decimal value to verify
+        Verify a decimal field in workflow against the expected value.
+        Automatically waits until the field is visible.
         """
-        # Locate the label element by its text
-        label = self.driver.find_element(By.XPATH, f"//label[contains(text(), '{label_text}')]")
+        try:
+            # Wait until label is visible (even if delayed rendering)
+            label_xpath = f"//label[contains(normalize-space(.), '{label_text}')]"
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located((By.XPATH, label_xpath))
+            )
 
-        # Find the corresponding input field next to the label
-        input_field = label.find_element(By.XPATH, "following-sibling::input | following::input[1]")
+            # Now get the input linked with that label
+            input_xpath = f"{label_xpath}/ancestor::cf-decimal//input"
+            input_field = self.driver.find_element(By.XPATH, input_xpath)
 
-        # Get the actual value from the input field
-        actual_value = float(input_field.get_attribute("value").strip())
+            # Get actual value
+            actual_value = input_field.get_attribute("value").strip()
+            print(f"🔹 Found '{label_text}' input value: {actual_value}")
 
-        # Print the actual value
-        print(f"🔹 Actual value for '{label_text}': {actual_value}")
+            # Compare with expected
+            if str(actual_value) == str(expected_value):
+                print(f"✔ Decimal verification passed: {actual_value}")
+            else:
+                print(f"❌ Decimal verification failed: expected(lookup) {expected_value}, got(workflow) {actual_value}")
 
-        # Compare with expected value
-        if actual_value == expected_value:
-            print(f"✔ Decimal verification passed: {actual_value}")
-        else:
-            print(f"❌ Decimal verification failed: expected {expected_value}, got {actual_value}")
+        except TimeoutException:
+            print(f"⏳ Timeout: Label '{label_text}' not visible after {timeout}s.")
+        except NoSuchElementException:
+            print(f"❌ Could not locate label or input for '{label_text}'")
+
+    CHANGE_STAGE_BTN = "//button[contains(.,'Change Process Stage')]"
+    STAGE_OPTION = "//button[@ngbdropdownitem and normalize-space(text())='{stage}']"
+    ID_CELLS = "//td[@data-title='ID' and @currecordid]"
+    APPROVE_BTN = "//label[contains(.,'Approved')]"
+    SUBMIT_BTN = "//button[contains(.,'Submit Form')]"
+
+    def process_latest_record_in_stage(self, stage_name, verify_in_end=False, latest_id=None):
+        """
+        Generic method to go to a stage, select latest record, approve & submit (if not End),
+        and optionally verify latest_id in End stage.
+        """
+        print(f"➡️ Navigating to {stage_name} stage...")
+
+        # 1. Click Change Process Stage
+        self.base.click(self.CHANGE_STAGE_BTN, "Change Process Stage button")
+        sleep(5)
+
+        # 2. Select stage
+        self.base.click(self.STAGE_OPTION.format(stage=stage_name), f"{stage_name} stage option")
+        sleep(3)
+
+        # Page verification
+        self.base.verify_stage_inbox_page(stage_name)
+
+        # 3. Wait for ID cells
+        rows = self.base.wait.until(
+            EC.presence_of_all_elements_located((By.XPATH, self.ID_CELLS))
+        )
+
+        # 4. Extract IDs
+        record_ids = [int(td.get_attribute("currecordid")) for td in rows
+                      if td.get_attribute("currecordid") and td.get_attribute("currecordid").isdigit()]
+
+        if not record_ids:
+            raise AssertionError(f"❌ No records found in {stage_name} stage inbox")
+
+        if stage_name != "End":
+            # 5. Latest record in this stage
+            latest_stage_id = max(record_ids)
+            print(f"✅ Latest record id found in {stage_name}: {latest_stage_id}")
+
+            # 6. Click the latest record
+            latest_xpath = f"//td[@data-title='ID' and @currecordid='{latest_stage_id}']"
+            self.base.click(latest_xpath, f"Record ID {latest_stage_id}")
+            sleep(2)

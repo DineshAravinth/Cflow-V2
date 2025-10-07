@@ -3,6 +3,7 @@ import pytest
 from PageObjects.H_lookup_to_workflow_populate import lookup_to_workflow_values
 
 
+
 @pytest.mark.order(1)
 class Test_001_new_workflow_creation:
     def test_lookup_to_workflow_setup(self, login, region):
@@ -39,6 +40,13 @@ class Test_001_new_workflow_creation:
         sleep(2)
         lw.textbox("Test Automation")
         sleep(2)
+
+        # if expected_decimal is not None:
+        #     # Step 3: Call the verification method with label and expected value
+        #     lw.verify_decimal_workflow(label_text="Decimal", expected_value=float(expected_decimal))
+        # else:
+        #     print("❌ Could not retrieve expected decimal value from the table")
+
 
     # def test_lookup_to_workflow_value_submission(self, login, region):
     #
